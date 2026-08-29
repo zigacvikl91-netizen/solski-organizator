@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Šola">
+<link rel="manifest" href="manifest.json">
+<title>Moj Šolski Organizator</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#161617;--muted:#6e6e73;--accent:#4f46e5;--border:#dedee3;--ok:#16803b;--warn:#b54708;--danger:#b42318}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif;background:var(--bg);color:var(--text)}
+main{max-width:820px;margin:auto;padding:18px 16px 112px}.hero{display:flex;justify-content:space-between;gap:12px;align-items:center}.hero>*{min-width:0}
+h1{font-size:27px;margin:4px 0}h2{font-size:20px}h3{margin:0 0 6px}.muted{color:var(--muted)}.small{font-size:12px}.tiny{font-size:11px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin:12px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center}.stat b{display:block;font-size:21px}
+button,input,select,textarea{font:inherit}button{min-height:44px;border:0;border-radius:13px;padding:10px 14px;font-weight:650;background:#ececf1;color:var(--text);touch-action:manipulation}button.primary{background:var(--accent);color:white}button.danger{color:var(--danger)}button.ok{color:var(--ok)}button.warn{color:var(--warn)}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:13px;padding:12px;background:white;color:var(--text);font-size:16px;margin-top:5px}label{font-size:13px;color:var(--muted)}form{display:grid;gap:11px}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;justify-content:center;padding:7px 8px calc(7px + env(safe-area-inset-bottom))}
+.nav-inner{width:min(820px,100%);display:grid;grid-template-columns:repeat(5,1fr);gap:3px}.nav button{padding:7px 2px;background:transparent;font-size:11px}.nav button.active{color:var(--accent);background:#eeeeff}.nav span{display:block;font-size:19px}.view{display:none}.view.active{display:block}
+.item{padding:13px 0;border-bottom:1px solid var(--border)}.item:last-child{border:0}.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#efeff5;font-size:12px}.badge.ok{background:#e8f7ee;color:var(--ok)}.badge.warn{background:#fff4e5;color:var(--warn)}
+.progress{height:8px;background:#e8e8ed;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent)}.flash{font-size:20px;text-align:center;padding:28px 12px;min-height:130px;display:grid;place-items:center}
+.hidden{display:none!important}.empty{padding:18px;text-align:center;color:var(--muted)}.plan-day{padding:12px;border:1px solid var(--border);border-radius:15px;margin-top:8px}.plan-day.today{border-color:var(--accent)}
+.quiz-choice{display:block;width:100%;text-align:left;margin:7px 0}.quiz-choice.correct{outline:2px solid var(--ok)}.quiz-choice.wrong{outline:2px solid var(--danger)}
+details{margin-top:8px}summary{cursor:pointer;font-weight:650}.install-note{background:#f0f0ff;border:1px solid #d8d8ff}
+.level{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.level button{flex:1;min-width:80px}.subject-card h3{margin-bottom:2px}.tree{margin-top:10px;padding-left:10px;border-left:2px solid #ececf1}.tree .chapter{margin:8px 0}.contact-actions a{display:inline-block;text-decoration:none;background:#ececf1;color:var(--text);padding:10px 12px;border-radius:12px;margin:4px 6px 0 0;font-weight:650}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}h1{font-size:24px}.hero{align-items:flex-start;flex-direction:column}.hero button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<section id="home" class="view active">
+ <div class="hero"><div><div class="muted">Osebni šolski pomočnik</div><h1>Moj organizator</h1></div><button id="exportBtn">Varnostna kopija</button></div>
+ <div id="installHelp" class="card install-note"><h3>Namestitev na iPhone</h3><div class="small">Ko je aplikacija objavljena na HTTPS naslovu: Safari → Deli → Dodaj na začetni zaslon.</div></div>
+ <div class="stats">
+  <div class="card stat"><b id="sSubjects">0</b><small>predmetov</small></div>
+  <div class="card stat"><b id="sPending">0</b><small>za učenje</small></div>
+  <div class="card stat"><b id="sProgress">0%</b><small>napredek</small></div>
+ </div>
+ <div class="card"><h3>Naslednji izpit</h3><div id="nextExam" class="muted">Ni dodanega izpita.</div></div>
+ <div class="card"><h3>Danes se uči</h3><div id="todayPlan" class="muted">Dodaj snov in datum izpita.</div></div>
+ <div class="card"><h3>Teme za ponovitev</h3><div id="weakTopics" class="muted">Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.</div></div>
+ <div class="card"><h3>Hitro dodaj</h3><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button></div></div>
+ <div class="card"><h3>Obnovi podatke</h3><input id="importFile" type="file" accept="application/json"><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
+</section>
+
+<section id="subjects" class="view">
+ <h1>Predmeti</h1>
+ <div class="card"><form id="subjectForm">
+  <input id="subjectId" type="hidden">
+  <label>Ime predmeta<input id="subjectName" required placeholder="npr. Matematika"></label>
+  <label>Kratek opis<input id="subjectDesc" placeholder="npr. 1. letnik PTI"></label>
+  <button id="subjectSaveBtn" class="primary">Dodaj predmet</button>
+ </form></div>
+ <div id="subjectList"></div>
+</section>
+
+<section id="study" class="view">
+ <h1>Učenje</h1>
+ <div class="card"><h3>Dodaj novo snov</h3><form id="materialForm">
+  <input id="materialId" type="hidden">
+  <label>Predmet<select id="materialSubject" required></select></label>
+  <div class="grid">
+   <label>Poglavje<input id="materialChapter" placeholder="npr. Stroški"></label>
+   <label>Podpoglavje<input id="materialSubchapter" placeholder="npr. Fiksni stroški"></label>
+  </div>
+  <label>Naslov snovi<input id="materialTitle" required placeholder="npr. Razlika med fiksnimi in variabilnimi stroški"></label>
+  <label>Snov ali zapiski<textarea id="materialText" rows="7" placeholder="Prilepi besedilo..."></textarea></label>
+  <label>Pomembnost<select id="materialPriority"><option value="2">Normalna</option><option value="3">Visoka</option><option value="1">Nizka</option></select></label>
+  <button id="materialSaveBtn" class="primary">Razvrsti in dodaj</button>
+ </form></div>
+ <div class="card"><h3>Iskanje</h3><input id="search" placeholder="Poišči po snovi, naslovu, poglavju ali predmetu"></div>
+ <div id="materialList"></div>
+
+ <div class="card"><h3>Flashcards</h3><div id="flashEmpty" class="muted">Dodaj snov, nato lahko vadiš kartice.</div><div id="flashBox" class="hidden"><div id="flashCard" class="flash"></div><div class="row"><button id="flipCard">Pokaži odgovor</button><button id="nextCard" class="primary">Naslednja</button></div></div></div>
+
+ <div class="card"><h3>Kviz</h3><div id="quizEmpty" class="muted">Za kviz dodaj vsaj eno snov z nekaj besedila.</div><div id="quizBox" class="hidden"><div id="quizQuestion" style="font-weight:700;margin-bottom:10px"></div><div id="quizChoices"></div><div id="quizStatus" class="muted small" style="margin-top:8px"></div><button id="nextQuiz" class="primary" style="margin-top:10px">Naslednje vprašanje</button></div></div>
+</section>
+
+<section id="calendar" class="view">
+ <h1>Koledar učenja</h1>
+ <div class="card"><form id="examForm">
+  <input id="examId" type="hidden">
+  <label>Predmet<select id="examSubject" required></select></label>
+  <label>Datum izpita<input id="examDate" type="date" required></label>
+  <label>Opomba<input id="examNote" placeholder="npr. ustni izpit"></label>
+  <button id="examSaveBtn" class="primary">Dodaj izpit</button>
+ </form></div>
+ <div class="card"><h3>Izpiti</h3><div id="examList"></div></div>
+ <div class="card"><h3>Samodejni učni načrt</h3><div id="studyPlan"></div></div>
+</section>
+
+<section id="teachers" class="view">
+ <h1>Učitelji</h1>
+ <div class="card"><form id="teacherForm">
+  <input id="teacherId" type="hidden">
+  <label>Ime in priimek<input id="teacherName" required></label>
+  <label>Predmet<select id="teacherSubject"></select></label>
+  <div class="grid"><label>E-pošta<input id="teacherEmail" type="email"></label><label>Telefon<input id="teacherPhone" type="tel"></label></div>
+  <label>Opombe<textarea id="teacherNote" rows="3" placeholder="Govorilne ure, navodila ..."></textarea></label>
+  <button id="teacherSaveBtn" class="primary">Shrani učitelja</button>
+ </form></div>
+ <div id="teacherList"></div>
+</section>
+</main>
+
+<nav class="nav"><div class="nav-inner">
+<button class="active" data-tab="home"><span>⌂</span>Domov</button>
+<button data-tab="subjects"><span>▤</span>Predmeti</button>
+<button data-tab="study"><span>◉</span>Učenje</button>
+<button data-tab="calendar"><span>□</span>Koledar</button>
+<button data-tab="teachers"><span>♙</span>Učitelji</button>
+</div></nav>
+
+<script>
+const KEY="solskiOrganizatorV3";
+let db=JSON.parse(localStorage.getItem(KEY)||'{"subjects":[],"materials":[],"exams":[],"teachers":[]}');
+db.subjects??=[];db.materials??=[];db.exams??=[];db.teachers??=[];
+let flashIndex=0, flashAnswer=false, quizIndex=0, quizAnswered=false;
+const $=id=>document.getElementById(id);
+const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));render()};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function go(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));scrollTo(0,0)}
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+function opts(empty="Izberi predmet"){let o=`<option value="">${empty}</option>`;return o+db.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+function subjectName(id){return db.subjects.find(s=>s.id===id)?.name||"Brez predmeta"}
+function splitSentences(text){return text.split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(x=>x.length>15)}
+function categorize(title,text){
+ const t=(title+" "+text).toLowerCase();
+ const rules=[["Definicije",["pomeni","definic","imenujemo","opredelimo"]],["Formule in izračuni",["formula","izračun","enačb","%","odstotek","računamo"]],["Primeri",["primer","npr.","na primer","primerjava"]],["Ključni pojmi",["vrste","delimo","značilnosti","lastnosti","funkcije","naloge"]],["Postopki",["postopek","korak","najprej","nato","potem","izvedemo"]]];
+ let best=["Splošna snov",0];for(const [name,words] of rules){let n=words.filter(w=>t.includes(w)).length;if(n>best[1])best=[name,n]}return best[0]
+}
+function cardsFrom(m){let parts=splitSentences(m.text).slice(0,12);if(!parts.length)parts=[m.title];return parts.map((p,i)=>({q:i===0?`Kaj moraš vedeti o temi »${m.title}«?`:`Pojasni trditev iz teme »${m.title}«:`,a:p,subject:m.subject}))}
+function quizItems(){const mats=db.materials.filter(m=>splitSentences(m.text).length>=1);let out=[];mats.forEach(m=>{const ss=splitSentences(m.text);ss.slice(0,5).forEach(s=>{const distractors=db.materials.filter(x=>x.id!==m.id).map(x=>x.title).slice(0,3);const answer=m.title;const choices=[answer,...distractors];while(choices.length<4)choices.push(["Definicije","Primeri","Ključni pojmi","Postopki"][choices.length-1]||"Druga tema");choices.sort(()=>Math.random()-.5);out.push({q:`V katero temo najbolj spada naslednja trditev?\n${s}`,answer,choices})})});return out}
+function daysUntil(date){const today=new Date();today.setHours(0,0,0,0);const d=new Date(date+"T00:00:00");return Math.ceil((d-today)/86400000)}
+function buildPlan(){
+ const plans=[];const exams=[...db.exams].sort((a,b)=>a.date.localeCompare(b.date)).filter(e=>daysUntil(e.date)>=0);
+ exams.forEach(e=>{const remaining=db.materials.filter(m=>m.subject===e.subject&&!m.done).sort((a,b)=>(a.mastery||0)-(b.mastery||0)||b.priority-a.priority||a.created-b.created);const d=Math.max(1,daysUntil(e.date));remaining.forEach((m,i)=>{const weight=(4-(m.mastery||0))*m.priority;const slot=Math.min(d-1,Math.floor(i*d/Math.max(1,remaining.length)));const date=new Date();date.setHours(0,0,0,0);date.setDate(date.getDate()+slot);plans.push({date:date.toISOString().slice(0,10),subject:e.subject,title:m.title,mastery:m.mastery||0,weight,exam:e.date})})});
+ return plans.sort((a,b)=>a.date.localeCompare(b.date)||b.weight-a.weight)
+}
+function render(){
+ $("materialSubject").innerHTML=opts();$("examSubject").innerHTML=opts();$("teacherSubject").innerHTML=opts("Brez predmeta");
+ $("sSubjects").textContent=db.subjects.length;
+ const done=db.materials.filter(m=>m.done).length,total=db.materials.length;$("sPending").textContent=total-done;$("sProgress").textContent=(total?Math.round(done/total*100):0)+"%";
+ const weak=db.materials.filter(m=>(m.mastery||0)<=1&&!m.done).slice(0,4);$("weakTopics").innerHTML=weak.length?weak.map(m=>`<div class="small">• ${esc(subjectName(m.subject))}: ${esc(m.title)}</div>`).join(""):"Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.";
+ renderSubjects();renderMaterials();renderExams();renderTeachers();renderFlash();renderQuiz();renderStudyPlan();
+}
+function renderSubjects(){
+ $("subjectList").innerHTML=db.subjects.length?db.subjects.map(s=>{let ms=db.materials.filter(m=>m.subject===s.id),d=ms.filter(m=>m.done).length,p=ms.length?Math.round(d/ms.length*100):0;const chapters=[...new Set(ms.map(m=>m.chapter).filter(Boolean))];return `<div class="card subject-card"><div class="hero"><div><h3>${esc(s.name)}</h3><div class="muted small">${esc(s.desc||"")}</div><span class="muted">${ms.length} vsebin</span></div><div class="row"><button onclick="editSubject('${s.id}')">Uredi</button><button class="danger" onclick="removeSubject('${s.id}')">Izbriši</button></div></div><div class="progress" style="margin-top:12px"><i style="width:${p}%"></i></div>${chapters.length?`<div class="tree">${chapters.map(ch=>`<div class="chapter"><b>${esc(ch)}</b><div class="tiny muted">${ms.filter(m=>m.chapter===ch).map(m=>esc(m.subchapter||m.title)).join(" · ")}</div></div>`).join("")}</div>`:""}</div>`}).join(""):'<div class="empty">Dodaj prvi predmet.</div>';
+}
+function renderMaterials(){
+ let q=$("search").value.toLowerCase();let arr=db.materials.filter(m=>(subjectName(m.subject)+" "+m.title+" "+m.chapter+" "+m.subchapter+" "+m.text+" "+m.category).toLowerCase().includes(q));
+ $("materialList").innerHTML=arr.length?arr.map(m=>`<div class="card"><span class="badge">${esc(subjectName(m.subject))} · ${esc(m.category)}</span> ${m.done?'<span class="badge ok">naučeno</span>':''}<h3 style="margin-top:9px">${esc(m.title)}</h3><div class="small muted">${esc(m.chapter||"Brez poglavja")}${m.subchapter?" → "+esc(m.subchapter):""}</div><p class="muted">${esc(m.text.slice(0,320))}${m.text.length>320?"…":""}</p><div class="level"><button onclick="setMastery('${m.id}',0)" ${m.mastery===0?'class="warn"':''}>Ne znam</button><button onclick="setMastery('${m.id}',1)" ${m.mastery===1?'class="warn"':''}>Težko</button><button onclick="setMastery('${m.id}',2)" ${m.mastery===2?'class="ok"':''}>Skoraj</button><button onclick="setMastery('${m.id}',3)" ${m.mastery===3?'class="ok"':''}>Znam</button></div><div class="row" style="margin-top:10px"><button onclick="toggleDone('${m.id}')">${m.done?"Vrni med učenje":"Označi kot naučeno"}</button><button onclick="editMaterial('${m.id}')">Uredi</button><button class="danger" onclick="removeMaterial('${m.id}')">Izbriši</button></div></div>`).join(""):'<div class="empty">Ni najdene snovi.</div>';
+}
+function renderExams(){
+ let exams=[...db.exams].sort((a,b)=>a.date.localeCompare(b.date));$("examList").innerHTML=exams.length?exams.map(e=>{let days=daysUntil(e.date),ms=db.materials.filter(m=>m.subject===e.subject&&!m.done);return `<div class="item"><b>${esc(subjectName(e.subject))}</b><div>${esc(e.date)} · ${days>=0?days+" dni":"datum je mimo"}</div>${e.note?`<div class="small">${esc(e.note)}</div>`:""}<div class="muted">${ms.length?`Za ponoviti: ${ms.length}`:"Vsa dodana snov je naučena."}</div><div class="row" style="margin-top:8px"><button onclick="editExam('${e.id}')">Uredi</button><button class="danger" onclick="removeExam('${e.id}')">Izbriši</button></div></div>`}).join(""):'<div class="empty">Ni izpitov.</div>';
+ let future=exams.find(e=>daysUntil(e.date)>=0);$("nextExam").textContent=future?subjectName(future.subject)+" – "+future.date:"Ni dodanega prihodnjega izpita.";
+ const plan=buildPlan(),today=new Date().toISOString().slice(0,10),p=plan.find(x=>x.date===today)||plan[0];$("todayPlan").textContent=p?subjectName(p.subject)+": "+p.title:"Trenutno ni nenaučene snovi.";
+}
+function renderStudyPlan(){const plan=buildPlan(),today=new Date().toISOString().slice(0,10);if(!plan.length){$("studyPlan").innerHTML='<div class="empty">Dodaj izpit in nenaučeno snov, da se ustvari načrt.</div>';return}const by={};plan.forEach(p=>(by[p.date]??=[]).push(p));$("studyPlan").innerHTML=Object.entries(by).slice(0,28).map(([date,items])=>`<div class="plan-day ${date===today?"today":""}"><b>${date===today?"Danes · ":""}${esc(date)}</b>${items.map(i=>`<div class="small" style="margin-top:6px">${esc(subjectName(i.subject))}: ${esc(i.title)} ${i.mastery<=1?'<span class="badge warn">ponovi</span>':""}</div>`).join("")}</div>`).join("")}
+function renderTeachers(){$("teacherList").innerHTML=db.teachers.length?db.teachers.map(t=>`<div class="card"><h3>${esc(t.name)}</h3><div class="muted">${esc(subjectName(t.subject))}</div><div class="contact-actions">${t.email?`<a href="mailto:${esc(t.email)}">E-pošta</a>`:""}${t.phone?`<a href="tel:${esc(t.phone)}">Pokliči</a>`:""}</div>${t.email?`<div class="small" style="margin-top:8px">${esc(t.email)}</div>`:""}${t.phone?`<div class="small">${esc(t.phone)}</div>`:""}${t.note?`<p>${esc(t.note)}</p>`:""}<div class="row"><button onclick="editTeacher('${t.id}')">Uredi</button><button class="danger" onclick="removeTeacher('${t.id}')">Izbriši</button></div></div>`).join(""):'<div class="empty">Dodaj kontakte učiteljev.</div>'}
+function allCards(){return db.materials.flatMap(cardsFrom)}
+function renderFlash(){let cs=allCards();$("flashEmpty").classList.toggle("hidden",!!cs.length);$("flashBox").classList.toggle("hidden",!cs.length);if(!cs.length)return;flashIndex%=cs.length;let c=cs[flashIndex];$("flashCard").textContent=flashAnswer?c.a:c.q;$("flipCard").textContent=flashAnswer?"Pokaži vprašanje":"Pokaži odgovor"}
+function renderQuiz(){const items=quizItems();$("quizEmpty").classList.toggle("hidden",!!items.length);$("quizBox").classList.toggle("hidden",!items.length);if(!items.length)return;quizIndex%=items.length;const q=items[quizIndex];$("quizQuestion").textContent=q.q;$("quizChoices").innerHTML=q.choices.map(c=>`<button class="quiz-choice" data-answer="${esc(c)}">${esc(c)}</button>`).join("");$("quizStatus").textContent=quizAnswered?"Izberi Naslednje vprašanje.":"Izberi odgovor.";document.querySelectorAll(".quiz-choice").forEach(b=>b.onclick=()=>{if(quizAnswered)return;quizAnswered=true;const ok=b.dataset.answer===q.answer;b.classList.add(ok?"correct":"wrong");document.querySelectorAll(".quiz-choice").forEach(x=>{if(x.dataset.answer===q.answer)x.classList.add("correct")});$("quizStatus").textContent=ok?"Pravilno.":"Ni pravilno. Pravilen odgovor je: "+q.answer})}
+$("subjectForm").onsubmit=e=>{e.preventDefault();const id=$("subjectId").value;const name=$("subjectName").value.trim(),desc=$("subjectDesc").value.trim();if(!name)return;if(id){const s=db.subjects.find(x=>x.id===id);s.name=name;s.desc=desc}else if(!db.subjects.some(s=>s.name.toLowerCase()===name.toLowerCase()))db.subjects.push({id:uid(),name,desc});e.target.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";save()};
+$("materialForm").onsubmit=e=>{e.preventDefault();let id=$("materialId").value,subject=$("materialSubject").value,title=$("materialTitle").value.trim(),text=$("materialText").value.trim();if(!subject||!title)return;const obj={id:id||uid(),subject,chapter:$("materialChapter").value.trim(),subchapter:$("materialSubchapter").value.trim(),title,text,priority:+$("materialPriority").value,category:categorize(title,text),done:false,mastery:0,created:Date.now()};if(id){const old=db.materials.find(x=>x.id===id);obj.done=old.done;obj.mastery=old.mastery||0;obj.created=old.created;db.materials[db.materials.findIndex(x=>x.id===id)]=obj}else db.materials.push(obj);e.target.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";save()};
+$("examForm").onsubmit=e=>{e.preventDefault();let id=$("examId").value;if(!$("examSubject").value||!$("examDate").value)return;const obj={id:id||uid(),subject:$("examSubject").value,date:$("examDate").value,note:$("examNote").value.trim()};if(id)db.exams[db.exams.findIndex(x=>x.id===id)]=obj;else db.exams.push(obj);e.target.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit";save()};
+$("teacherForm").onsubmit=e=>{e.preventDefault();const id=$("teacherId").value;const obj={id:id||uid(),name:$("teacherName").value.trim(),subject:$("teacherSubject").value,email:$("teacherEmail").value.trim(),phone:$("teacherPhone").value.trim(),note:$("teacherNote").value.trim()};if(!obj.name)return;if(id)db.teachers[db.teachers.findIndex(x=>x.id===id)]=obj;else db.teachers.push(obj);e.target.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";save()};
+$("search").oninput=renderMaterials;$("flipCard").onclick=()=>{flashAnswer=!flashAnswer;renderFlash()};$("nextCard").onclick=()=>{flashAnswer=false;flashIndex++;renderFlash()};$("nextQuiz").onclick=()=>{quizAnswered=false;quizIndex++;renderQuiz()};
+window.setMastery=(id,v)=>{let m=db.materials.find(x=>x.id===id);if(m){m.mastery=v;if(v===3)m.done=true;save()}};
+window.toggleDone=id=>{let m=db.materials.find(x=>x.id===id);if(m){m.done=!m.done;if(m.done&&m.mastery<2)m.mastery=2;save()}};
+window.removeMaterial=id=>{db.materials=db.materials.filter(x=>x.id!==id);save()};window.removeExam=id=>{db.exams=db.exams.filter(x=>x.id!==id);save()};window.removeTeacher=id=>{db.teachers=db.teachers.filter(x=>x.id!==id);save()};
+window.editSubject=id=>{const s=db.subjects.find(x=>x.id===id);if(!s)return;go("subjects");$("subjectId").value=s.id;$("subjectName").value=s.name;$("subjectDesc").value=s.desc||"";$("subjectSaveBtn").textContent="Shrani spremembe"};
+window.editMaterial=id=>{const m=db.materials.find(x=>x.id===id);if(!m)return;go("study");$("materialId").value=m.id;$("materialSubject").value=m.subject;$("materialChapter").value=m.chapter||"";$("materialSubchapter").value=m.subchapter||"";$("materialTitle").value=m.title;$("materialText").value=m.text;$("materialPriority").value=m.priority;$("materialSaveBtn").textContent="Shrani spremembe"};
+window.editExam=id=>{const e=db.exams.find(x=>x.id===id);if(!e)return;go("calendar");$("examId").value=e.id;$("examSubject").value=e.subject;$("examDate").value=e.date;$("examNote").value=e.note||"";$("examSaveBtn").textContent="Shrani spremembe"};
+window.editTeacher=id=>{const t=db.teachers.find(x=>x.id===id);if(!t)return;go("teachers");$("teacherId").value=t.id;$("teacherName").value=t.name;$("teacherSubject").value=t.subject;$("teacherEmail").value=t.email;$("teacherPhone").value=t.phone;$("teacherNote").value=t.note;$("teacherSaveBtn").textContent="Shrani spremembe"};
+window.removeSubject=id=>{if(confirm("Izbrišem predmet in njegovo snov ter izpite?")){db.subjects=db.subjects.filter(x=>x.id!==id);db.materials=db.materials.filter(x=>x.subject!==id);db.exams=db.exams.filter(x=>x.subject!==id);db.teachers.forEach(t=>{if(t.subject===id)t.subject=""});save()}};
+$("exportBtn").onclick=()=>{let a=document.createElement("a");let u=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:"application/json"}));a.href=u;a.download="sola-varnostna-kopija.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),500)};
+$("importFile").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!Array.isArray(x.subjects)||!Array.isArray(x.materials)||!Array.isArray(x.exams)||!Array.isArray(x.teachers))throw 0;db=x;save();alert("Podatki obnovljeni.")}catch{alert("Datoteka ni veljavna varnostna kopija.")}};
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");render();
+</script>
+</body>
+</html>
