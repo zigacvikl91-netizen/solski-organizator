@@ -319,6 +319,12 @@ body.dark .notification-card,body.dark .notification-status,body.dark .notificat
  <div class="card"><h3>Naslednji izpit</h3><div id="nextExam" class="muted">Ni dodanega izpita.</div></div>
  <div class="card"><div class="hero"><div><h3>Danes se uči</h3><div id="todayTotal" class="muted small"></div></div><button data-go="planner">Odpri plan</button></div><div id="todayPlan" class="muted">Dodaj snov in datum izpita.</div></div>
  <div class="card"><h3>Teme za ponovitev</h3><div id="weakTopics" class="muted">Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.</div></div>
+ <div class="card notification-card"><h3>☁️ Firebase Push</h3>
+ <div class="small muted">Povezava omogoča pridobitev FCM tokena za obvestila tudi, ko je PWA zaprta.</div>
+ <div class="toolbar" style="margin-top:10px"><button id="connectFirebasePush" class="primary">Poveži Firebase Push</button><button id="copyFcmToken">📋 Kopiraj FCM token</button></div>
+ <div id="firebasePushStatus" class="notification-status">Firebase še ni povezan.</div>
+ <textarea id="fcmTokenBox" rows="4" readonly placeholder="FCM token se bo prikazal tukaj..." style="margin-top:8px"></textarea>
+ </div>
  <div class="card notification-card"><h3>🔔 Obvestila</h3>
  <div class="small muted">Opomniki za učenje in izpite. Ko je aplikacija odprta, lahko delujejo lokalno. Za zanesljivo obvestilo pri zaprti aplikaciji je še vedno potreben Web Push pošiljatelj.</div>
  <div class="toolbar" style="margin-top:10px"><button id="enableNotifications" class="primary">Dovoli obvestila</button><button id="testNotification">Pošlji test</button></div>
@@ -489,6 +495,10 @@ body.dark .notification-card,body.dark .notification-status,body.dark .notificat
 <button data-tab="grades"><span>★</span>Ocene</button>
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 
 <script>
 const KEY="solskiOrganizatorV3";
@@ -762,6 +772,11 @@ $("timerStop").onclick=()=>{if(timerRunning){timerElapsed+=Date.now()-timerStart
 
 
 
+
+$("connectFirebasePush").onclick=registerFirebasePush;
+$("copyFcmToken").onclick=async()=>{const t=currentFcmToken||$("fcmTokenBox").value;if(!t){alert("Najprej poveži Firebase Push.");return}try{await navigator.clipboard.writeText(t);alert("FCM token je kopiran.")}catch{prompt("Kopiraj FCM token:",t)}};
+refreshFirebaseTokenView();
+
 $("enableNotifications").onclick=ensureNotificationPermission;
 $("testNotification").onclick=()=>showStudyNotification("Šolski organizator","Testno obvestilo deluje. 🔔");
 renderNotificationCenter();scheduleForegroundReminderCheck();
@@ -969,6 +984,44 @@ function scheduleForegroundReminderCheck(){
   const matches=notificationScheduleItems().filter(x=>x.date===key&&x.time===hm);
   if(matches.length){sessionStorage.setItem("lastReminderStamp",stamp);matches.forEach(x=>showStudyNotification(x.title,x.body))}
  },30000)
+}
+
+
+const FIREBASE_CONFIG={"apiKey": "AIzaSyAEk5q4QYFLw_0i8Wag5BG_vQYiL5prwXQ", "authDomain": "solski-organizator.firebaseapp.com", "projectId": "solski-organizator", "storageBucket": "solski-organizator.firebasestorage.app", "messagingSenderId": "79449291742", "appId": "1:79449291742:web:fc91eeb606430bc0fcbb4f"};
+const FIREBASE_VAPID_KEY="BK4z8oCdwCYuZWFBGwjZo3BOA61IdK0m-LepkGjDIrutqSsCtdc7IHt-tgikShMvd0C3p55jVtBSVwU6d1mWEg0";
+let firebaseMessaging=null;
+let currentFcmToken=localStorage.getItem("solaFcmToken")||"";
+
+async function initFirebaseMessaging(){
+ try{
+  if(!window.firebase)throw new Error("Firebase SDK ni naložen.");
+  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+  firebaseMessaging=firebase.messaging();
+  return true;
+ }catch(e){console.error(e);return false}
+}
+async function registerFirebasePush(){
+ const status=$("firebasePushStatus");
+ try{
+  if(!("serviceWorker" in navigator))throw new Error("Service Worker ni podprt.");
+  const ok=await ensureNotificationPermission();if(!ok)throw new Error("Obvestila niso dovoljena.");
+  const ready=await initFirebaseMessaging();if(!ready)throw new Error("Firebase Messaging se ni inicializiral.");
+  const reg=await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+  await navigator.serviceWorker.ready;
+  const token=await firebaseMessaging.getToken({vapidKey:FIREBASE_VAPID_KEY,serviceWorkerRegistration:reg});
+  if(!token)throw new Error("FCM token ni bil ustvarjen.");
+  currentFcmToken=token;localStorage.setItem("solaFcmToken",token);
+  $("fcmTokenBox").value=token;
+  status.innerHTML="✅ Firebase Push je povezan na tej napravi.<br><span class='small muted'>FCM token je pripravljen za pošiljanje testnih ali načrtovanih push obvestil.</span>";
+  return token;
+ }catch(e){
+  console.error(e);status.textContent="❌ Firebase Push povezava ni uspela: "+e.message;return null
+ }
+}
+async function refreshFirebaseTokenView(){
+ if(!$("fcmTokenBox"))return;
+ $("fcmTokenBox").value=currentFcmToken||"";
+ $("firebasePushStatus").textContent=currentFcmToken?"✅ FCM token je shranjen na tej napravi.":"Firebase še ni povezan.";
 }
 
 const TUTORIAL_KEY="solskiOrganizatorTabTutorialsV1";
