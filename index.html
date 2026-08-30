@@ -249,6 +249,19 @@ body.dark .calendar-detail-item .exam-note{background:#302b1e!important;color:#f
  .cal-event{font-size:8.5px;padding:3px 4px}
 }
 
+
+/* V8.3 – Gmail/e-mail + center za obvestila */
+.teacher-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.teacher-actions a,.teacher-actions button{min-height:42px;padding:9px 11px;border-radius:12px;border:1px solid var(--border);text-decoration:none;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.teacher-actions a{background:#eef6ff;color:#315f9d}
+.notification-card{background:linear-gradient(135deg,#fff6df,#f5f2ff)!important}
+.notification-status{padding:10px 12px;border-radius:13px;background:#fff;border:1px solid var(--border);margin-top:8px}
+.notification-list{display:grid;gap:8px;margin-top:10px}
+.notification-item{padding:11px;border-radius:13px;border:1px solid var(--border);background:rgba(255,255,255,.72)}
+.notification-item b{display:block}
+body.dark .teacher-actions a{background:#22324b;color:#bcd4ff;border-color:#39465d}
+body.dark .notification-card,body.dark .notification-status,body.dark .notification-item{background:#1b1e28!important;color:#f4f5fb!important;border-color:#34394a!important}
+
 </style>
 </head>
 <body>
@@ -306,6 +319,12 @@ body.dark .calendar-detail-item .exam-note{background:#302b1e!important;color:#f
  <div class="card"><h3>Naslednji izpit</h3><div id="nextExam" class="muted">Ni dodanega izpita.</div></div>
  <div class="card"><div class="hero"><div><h3>Danes se uči</h3><div id="todayTotal" class="muted small"></div></div><button data-go="planner">Odpri plan</button></div><div id="todayPlan" class="muted">Dodaj snov in datum izpita.</div></div>
  <div class="card"><h3>Teme za ponovitev</h3><div id="weakTopics" class="muted">Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.</div></div>
+ <div class="card notification-card"><h3>🔔 Obvestila</h3>
+ <div class="small muted">Opomniki za učenje in izpite. Ko je aplikacija odprta, lahko delujejo lokalno. Za zanesljivo obvestilo pri zaprti aplikaciji je še vedno potreben Web Push pošiljatelj.</div>
+ <div class="toolbar" style="margin-top:10px"><button id="enableNotifications" class="primary">Dovoli obvestila</button><button id="testNotification">Pošlji test</button></div>
+ <div id="notificationPermissionStatus" class="notification-status"></div>
+ <div id="notificationScheduleList" class="notification-list"></div>
+ </div>
  <div class="card"><h3>⚙️ Videz in zasebnost</h3><div class="toolbar"><button id="darkModeBtn">🌙 Temni način</button><button id="pinBtn">🔐 Nastavi PIN</button><button id="lockNowBtn">Zakleni zdaj</button></div><div class="file-note">PIN je lokalna zaščita aplikacije na tej napravi.</div></div>
  <div class="card"><div class="hero"><h3>Hitro dodaj</h3><button id="repeatTutorials">Ponovi vodiče</button></div><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
  <div class="card"><h3>Obnovi podatke</h3><input id="importFile" type="file" accept="application/json"><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
@@ -476,7 +495,7 @@ const KEY="solskiOrganizatorV3";
 let db=JSON.parse(localStorage.getItem(KEY)||'{"subjects":[],"materials":[],"exams":[],"teachers":[],"grades":[],"studySettings":{},"dayOverrides":{},"studySlots":[],"questions":[],"studySessions":[],"freeDays":[],"quickNotes":[]}');
 db.subjects??=[];db.materials??=[];db.materials.forEach(m=>m.photos??=[]);db.exams??=[];db.teachers??=[];db.grades??=[];
 db.studySettings??={};db.studySettings.defaultTime??="17:00";db.studySettings.dailyMinutes??=180;db.studySettings.blockMinutes??=45;
-db.dayOverrides??={};db.studySlots??=[];db.questions??=[];db.studySessions??=[];db.freeDays??=[];db.quickNotes??=[];db.mockHistory??=[];db.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});
+db.dayOverrides??={};db.studySlots??=[];db.questions??=[];db.studySessions??=[];db.freeDays??=[];db.quickNotes??=[];db.mockHistory??=[];db.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});db.notificationSettings??={enabled:false};
 let flashIndex=0, flashAnswer=false, quizIndex=0, quizAnswered=false;
 const $=id=>document.getElementById(id);
 const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));render()};
@@ -506,7 +525,7 @@ function render(){
  $("sSubjects").textContent=db.subjects.length;
  const done=db.materials.filter(m=>m.done).length,total=db.materials.length;$("sPending").textContent=total-done;$("sProgress").textContent=(total?Math.round(done/total*100):0)+"%";
  const weak=db.materials.filter(m=>(m.mastery||0)<=1&&!m.done).slice(0,4);$("weakTopics").innerHTML=weak.length?weak.map(m=>`<div class="small">• ${esc(subjectName(m.subject))}: ${esc(m.title)}</div>`).join(""):"Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.";
- renderSubjects();renderMaterials();renderExams();renderPlanner();renderGrades();renderTeachers();renderFlash();renderQuiz();renderStudyPlan();renderV7Extras();renderV8Extras();
+ renderSubjects();renderMaterials();renderExams();renderPlanner();renderGrades();renderTeachers();renderFlash();renderQuiz();renderStudyPlan();renderV7Extras();renderV8Extras();renderNotificationCenter();
 }
 function renderSubjects(){
  $("subjectList").innerHTML=db.subjects.length?db.subjects.map(s=>{let ms=db.materials.filter(m=>m.subject===s.id),d=ms.filter(m=>m.done).length,p=ms.length?Math.round(d/ms.length*100):0;const chapters=[...new Set(ms.map(m=>m.chapter).filter(Boolean))],chapterDone=chapters.filter(ch=>db.materials.filter(m=>m.subject===s.id&&m.chapter===ch).every(m=>m.done)).length;return `<div class="card subject-card"><div class="hero"><div><h3>${esc(s.name)}</h3><div class="muted small">${esc(s.desc||"")}</div><span class="muted">${ms.length} vsebin · ✅ ${chapterDone}/${chapters.length||0} poglavij</span></div><div class="row"><button class="ok" onclick="toggleSubjectComplete(\'${s.id}\')">${s.completed?"Ponovno odpri":"✓ Opravljen predmet"}</button><button onclick="editSubject('${s.id}')">Uredi</button><button class="danger" onclick="removeSubject('${s.id}')">Izbriši</button></div></div><div class="progress" style="margin-top:12px"><i style="width:${p}%"></i></div>${chapters.length?`<div class="tree">${chapters.map(ch=>`<div class="chapter"><b>${esc(ch)}</b><div class="tiny muted">${ms.filter(m=>m.chapter===ch).map(m=>esc(m.subchapter||m.title)).join(" · ")}</div></div>`).join("")}</div>`:""}</div>`}).join(""):'<div class="empty">Dodaj prvi predmet.</div>';
@@ -632,7 +651,10 @@ function maybeForegroundReminder(){
  if(s){try{new Notification("📚 Čas je za učenje",{body:`${subjectName(s.subject)} · ${s.title||"Učenje"} · ${s.minutes} min`});s.notifiedAt=Date.now();save()}catch(e){}}
 }
 
-function renderTeachers(){$("teacherList").innerHTML=db.teachers.length?db.teachers.map(t=>`<div class="card"><h3>${esc(t.name)}</h3><div class="muted">${esc(subjectName(t.subject))}</div><div class="contact-actions">${t.email?`<a href="mailto:${esc(t.email)}">E-pošta</a>`:""}${t.phone?`<a href="tel:${esc(t.phone)}">Pokliči</a>`:""}</div>${t.email?`<div class="small" style="margin-top:8px">${esc(t.email)}</div>`:""}${t.phone?`<div class="small">${esc(t.phone)}</div>`:""}${t.note?`<p>${esc(t.note)}</p>`:""}<div class="row"><button onclick="editTeacher('${t.id}')">Uredi</button><button class="danger" onclick="removeTeacher('${t.id}')">Izbriši</button></div></div>`).join(""):'<div class="empty">Dodaj kontakte učiteljev.</div>'}
+function renderTeachers(){$("teacherList").innerHTML=db.teachers.length?db.teachers.map(t=>`<div class="card"><h3>${esc(t.name)}</h3><div class="muted">${esc(subjectName(t.subject))}</div><div class="contact-actions">${t.email?`<a href="mailto:${esc(t.email)}">E-pošta</a>`:""}${t.phone?`<a href="tel:${esc(t.phone)}">Pokliči</a>`:""}</div>${t.email?`<div class="small" style="margin-top:8px">${esc(t.email)}</div>`:""}${t.phone?`<div class="small">${esc(t.phone)}</div>`:""}${t.note?`<p>${esc(t.note)}</p>`:""}<div class="row"><div class="teacher-actions">
+ ${t.email?`<a href="mailto:${encodeURIComponent(t.email)}?subject=${encodeURIComponent("Vprašanje glede "+subjectName(t.subject))}">📧 Nov e-mail</a><button type="button" onclick="copyTeacherEmail('${t.id}')">📋 Kopiraj e-mail</button>`:""}
+ </div>
+ <div class="actions"><button onclick="editTeacher('${t.id}')">Uredi</button><button class="danger" onclick="removeTeacher('${t.id}')">Izbriši</button></div></div></div>`).join(""):'<div class="empty">Dodaj kontakte učiteljev.</div>'}
 function allCards(){return db.materials.flatMap(cardsFrom)}
 function renderFlash(){let cs=allCards();$("flashEmpty").classList.toggle("hidden",!!cs.length);$("flashBox").classList.toggle("hidden",!cs.length);if(!cs.length)return;flashIndex%=cs.length;let c=cs[flashIndex];$("flashCard").textContent=flashAnswer?c.a:c.q;$("flipCard").textContent=flashAnswer?"Pokaži vprašanje":"Pokaži odgovor"}
 function renderQuiz(){const items=quizItems();$("quizEmpty").classList.toggle("hidden",!!items.length);$("quizBox").classList.toggle("hidden",!items.length);if(!items.length)return;quizIndex%=items.length;const q=items[quizIndex];$("quizQuestion").textContent=q.q;$("quizChoices").innerHTML=q.choices.map(c=>`<button class="quiz-choice" data-answer="${esc(c)}">${esc(c)}</button>`).join("");$("quizStatus").textContent=quizAnswered?"Izberi Naslednje vprašanje.":"Izberi odgovor.";document.querySelectorAll(".quiz-choice").forEach(b=>b.onclick=()=>{if(quizAnswered)return;quizAnswered=true;const ok=b.dataset.answer===q.answer;b.classList.add(ok?"correct":"wrong");document.querySelectorAll(".quiz-choice").forEach(x=>{if(x.dataset.answer===q.answer)x.classList.add("correct")});$("quizStatus").textContent=ok?"Pravilno.":"Ni pravilno. Pravilen odgovor je: "+q.answer})}
@@ -738,6 +760,11 @@ $("timerPause").onclick=()=>{if(!timerRunning)return;timerElapsed+=Date.now()-ti
 $("timerStop").onclick=()=>{if(timerRunning){timerElapsed+=Date.now()-timerStartAt;timerRunning=false;clearInterval(timerHandle)}const mins=Math.max(1,Math.round(timerElapsed/60000));if(timerElapsed>0){db.studySessions.push({id:uid(),date:localDateKey(),subject:$("timerSubject").value,minutes:mins,created:Date.now()});save()}timerElapsed=0;timerPaint()};
 
 
+
+
+$("enableNotifications").onclick=ensureNotificationPermission;
+$("testNotification").onclick=()=>showStudyNotification("Šolski organizator","Testno obvestilo deluje. 🔔");
+renderNotificationCenter();scheduleForegroundReminderCheck();
 
 $("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderMonthCalendar()};
 $("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderMonthCalendar()};
@@ -894,6 +921,55 @@ function renderV8Extras(){
  const due=dueReviews();$("reviewDue").innerHTML=due.length?due.slice(0,8).map(m=>`<div class="review-item"><b>${esc(subjectName(m.subject))}: ${esc(m.title)}</b><div class="small muted">Ocena: ${["Ne znam","Težko","Skoraj","Znam"][m.mastery||0]}</div><button onclick="go('study');editMaterial('${m.id}')">Ponovi</button></div>`).join(""):'<div class="empty">Danes ni načrtovanih ponovitev. ✅</div>';$("loadStatus").innerHTML=workloadStatus();setTimeout(()=>{hydrateMaterialPhotos();hydrateMaterialFiles()},0)
 }
 window.startMaterial=id=>{const m=db.materials.find(x=>x.id===id);if(m){m.status="learning";if(!m.nextReview)m.nextReview=localDateKey();save()}};
+
+
+window.copyTeacherEmail=async id=>{
+ const t=db.teachers.find(x=>x.id===id);if(!t?.email)return;
+ try{await navigator.clipboard.writeText(t.email);alert("E-mail je kopiran: "+t.email)}
+ catch{prompt("Kopiraj e-mail:",t.email)}
+};
+
+function notificationPermissionText(){
+ if(!("Notification" in window))return "Ta brskalnik ne podpira obvestil.";
+ if(Notification.permission==="granted")return "✅ Obvestila so dovoljena.";
+ if(Notification.permission==="denied")return "❌ Obvestila so blokirana v nastavitvah naprave/brskalnika.";
+ return "⚠️ Dovoljenje za obvestila še ni bilo podano.";
+}
+async function ensureNotificationPermission(){
+ if(!("Notification" in window)){alert("Ta naprava/brskalnik ne podpira obvestil.");return false}
+ const p=await Notification.requestPermission();
+ db.notificationSettings.enabled=p==="granted";save();renderNotificationCenter();
+ return p==="granted";
+}
+async function showStudyNotification(title,body){
+ if(Notification.permission!=="granted"){const ok=await ensureNotificationPermission();if(!ok)return}
+ const reg=await navigator.serviceWorker?.ready;
+ if(reg?.showNotification)await reg.showNotification(title,{body,icon:"./icon-192.png",badge:"./icon-192.png",tag:"sola-reminder",renotify:true});
+ else new Notification(title,{body});
+}
+function notificationScheduleItems(){
+ const today=localDateKey(),items=[];
+ db.studySlots.filter(s=>!s.done&&s.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||"")).slice(0,8).forEach(s=>items.push({date:s.date,time:s.time||db.studySettings.defaultTime||"17:00",title:"Čas za učenje",body:(s.title||subjectName(s.subject))+" · "+(s.minutes||45)+" min"}));
+ db.exams.filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||"")).slice(0,8).forEach(e=>items.push({date:e.date,time:e.time||"08:00",title:"Izpit: "+subjectName(e.subject),body:e.note||((e.attempt||1)+". rok")}));
+ return items.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,12)
+}
+function renderNotificationCenter(){
+ const s=$("notificationPermissionStatus");if(s)s.textContent=notificationPermissionText();
+ const list=$("notificationScheduleList");if(!list)return;
+ const items=notificationScheduleItems();
+ list.innerHTML=items.length?items.map(x=>`<div class="notification-item"><b>${esc(x.date)} · ${esc(x.time)} — ${esc(x.title)}</b><div class="small muted">${esc(x.body)}</div></div>`).join(""):'<div class="empty">Ni prihodnjih opomnikov.</div>';
+}
+let foregroundReminderTimer=null;
+function scheduleForegroundReminderCheck(){
+ clearInterval(foregroundReminderTimer);
+ foregroundReminderTimer=setInterval(()=>{
+  if(Notification.permission!=="granted")return;
+  const now=new Date(),key=localDateKey(now),hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),stamp=key+" "+hm;
+  if(sessionStorage.getItem("lastReminderStamp")===stamp)return;
+  const matches=notificationScheduleItems().filter(x=>x.date===key&&x.time===hm);
+  if(matches.length){sessionStorage.setItem("lastReminderStamp",stamp);matches.forEach(x=>showStudyNotification(x.title,x.body))}
+ },30000)
+}
 
 const TUTORIAL_KEY="solskiOrganizatorTabTutorialsV1";
 let tutorialSeen=JSON.parse(localStorage.getItem(TUTORIAL_KEY)||"{}"), tutorialSteps=[], tutorialIndex=0, highlighted=null;
