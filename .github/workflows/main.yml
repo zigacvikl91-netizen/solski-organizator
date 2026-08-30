@@ -1,0 +1,61 @@
+name: iPhone Push Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "Naslov obvestila"
+        required: false
+        default: "📚 Šolski organizator"
+      body:
+        description: "Besedilo obvestila"
+        required: false
+        default: "Web Push obvestila delujejo! 🎉"
+
+jobs:
+  send-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install web-push
+        run: npm install web-push
+
+      - name: Send Web Push
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SUBSCRIPTION: ${{ secrets.PUSH_SUBSCRIPTION }}
+          PUSH_TITLE: ${{ inputs.title }}
+          PUSH_BODY: ${{ inputs.body }}
+        run: |
+          node <<'NODE'
+          const webpush = require("web-push");
+
+          const subscription = JSON.parse(process.env.PUSH_SUBSCRIPTION);
+
+          webpush.setVapidDetails(
+            "https://zigacvikl91-netizen.github.io/solski-organizator/",
+            process.env.VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+          );
+
+          const payload = JSON.stringify({
+            title: process.env.PUSH_TITLE || "📚 Šolski organizator",
+            body: process.env.PUSH_BODY || "Novo obvestilo",
+            url: "https://zigacvikl91-netizen.github.io/solski-organizator/"
+          });
+
+          webpush.sendNotification(subscription, payload)
+            .then(() => {
+              console.log("✅ Push obvestilo je bilo uspešno poslano.");
+            })
+            .catch((error) => {
+              console.error("❌ Napaka pri pošiljanju:", error);
+              process.exit(1);
+            });
+          NODE
