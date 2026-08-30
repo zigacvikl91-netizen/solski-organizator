@@ -129,6 +129,126 @@ body.dark .lock-screen{background:#11131a}.streak{font-size:30px;font-weight:900
 #globalSearchCard{background:linear-gradient(135deg,#eef6ff,#f7f2ff)}
 #statsCard{background:linear-gradient(135deg,#effaf3,#fff8df)}
 @media(max-width:620px){.feature-grid{grid-template-columns:1fr}.toolbar>*{flex:1 1 auto}}
+
+/* V8.1 – popravek temnega načina */
+body.dark .card,
+body.dark #globalSearchCard,
+body.dark #statsCard,
+body.dark #subjects .card,
+body.dark #study .card,
+body.dark #planner .card,
+body.dark #calendar .card,
+body.dark #grades .card,
+body.dark #teachers .card,
+body.dark .readiness-row,
+body.dark .kpi,
+body.dark .inbox-item,
+body.dark .review-item,
+body.dark .mock-question,
+body.dark .quick-note,
+body.dark .load-ok,
+body.dark .load-warning,
+body.dark .exam-day-alert,
+body.dark .goal-done,
+body.dark .extra-card,
+body.dark .install-card,
+body.dark .stat{
+  background:#1b1e28 !important;
+  color:#f4f5fb !important;
+  border-color:#34394a !important;
+}
+
+body.dark .muted,
+body.dark .small,
+body.dark .file-note,
+body.dark .kpi small,
+body.dark .card p,
+body.dark .card .muted{
+  color:#aeb4c4 !important;
+}
+
+body.dark input,
+body.dark textarea,
+body.dark select{
+  background:#151821 !important;
+  color:#f4f5fb !important;
+  border-color:#3b4154 !important;
+}
+
+body.dark input::placeholder,
+body.dark textarea::placeholder{
+  color:#7f879b !important;
+}
+
+body.dark .progress{
+  background:#303545 !important;
+}
+
+body.dark .photo-action,
+body.dark .asset-btn,
+body.dark button:not(.primary):not(.danger){
+  background:#242836 !important;
+  color:#eef0f7 !important;
+  border-color:#3a4052 !important;
+}
+
+body.dark .primary{
+  color:white !important;
+}
+
+body.dark nav button{
+  color:#d9ddea !important;
+}
+
+body.dark nav button.active{
+  background:#35385f !important;
+  color:white !important;
+}
+
+body.dark .badge{
+  background:#2a2f3e !important;
+  color:#e9ecf5 !important;
+}
+
+body.dark .received-badge{background:#4a3b13 !important;color:#ffe49a !important}
+body.dark .learning-badge{background:#24395d !important;color:#a8c7ff !important}
+body.dark .done-badge{background:#1f4b35 !important;color:#a9e2bf !important}
+
+body.dark .lock-box{
+  background:#1b1e28 !important;
+  color:#f4f5fb !important;
+}
+
+
+/* V8.2 – pravi mesečni koledar */
+.calendar-main-card{background:linear-gradient(135deg,#eef9f7,#f4f6ff)!important}
+.calendar-toolbar{display:grid;grid-template-columns:48px 1fr 48px;gap:10px;align-items:center;margin-bottom:14px}
+.calendar-toolbar button{font-size:30px;min-height:46px;padding:0;border-radius:14px}
+.calendar-weekdays,.month-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.calendar-weekdays{margin-bottom:6px}
+.calendar-weekdays div{text-align:center;font-size:12px;font-weight:800;color:var(--muted);padding:4px 0}
+.cal-day{min-height:105px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.74);padding:8px;cursor:pointer;position:relative;overflow:hidden}
+.cal-day:hover{transform:translateY(-1px)}
+.cal-day.other{opacity:.38}.cal-day.today{outline:2px solid #5b5ce2;outline-offset:-2px}
+.cal-day.selected{box-shadow:0 0 0 2px #168c7a inset}
+.cal-num{font-weight:850;font-size:14px;margin-bottom:5px}
+.cal-event{display:block;width:100%;padding:4px 5px;margin-top:4px;border-radius:8px;background:#e3f5f0;color:#176b5e;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-event.multiple{background:#fff0df;color:#9a5b16}
+.cal-more{font-size:10px;color:var(--muted);margin-top:4px}
+.calendar-day-details{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.calendar-detail-item{padding:11px;border:1px solid var(--border);border-radius:13px;background:rgba(255,255,255,.7);margin-top:8px}
+.calendar-detail-item .exam-note{margin-top:5px;padding:6px 8px;border-radius:9px;background:#fff8df;font-size:12px}
+body.dark .calendar-main-card,body.dark .cal-day,body.dark .calendar-detail-item{background:#1b1e28!important;color:#f4f5fb!important;border-color:#34394a!important}
+body.dark .cal-event{background:#21483f!important;color:#bdebdc!important}
+body.dark .cal-event.multiple{background:#4a351d!important;color:#ffd6a4!important}
+body.dark .calendar-detail-item .exam-note{background:#302b1e!important;color:#f3e5b3!important}
+@media(max-width:620px){
+ .calendar-weekdays,.month-calendar{gap:3px}
+ .cal-day{min-height:78px;padding:5px;border-radius:10px}
+ .cal-num{font-size:12px}
+ .cal-event{font-size:8.5px;padding:3px 4px}
+}
+
 </style>
 </head>
 <body>
@@ -283,6 +403,21 @@ body.dark .lock-screen{background:#11131a}.streak{font-size:30px;font-weight:900
 
 <section id="calendar" class="view">
  <h1>Koledar učenja</h1>
+ <div class="card calendar-main-card">
+  <div class="calendar-toolbar">
+   <button id="calendarPrev" type="button">‹</button>
+   <div>
+    <h3 id="calendarTitle" style="margin:0;text-align:center">Koledar</h3>
+    <div class="small muted" style="text-align:center">Izpiti so označeni neposredno na dnevu.</div>
+   </div>
+   <button id="calendarNext" type="button">›</button>
+  </div>
+  <div class="calendar-weekdays">
+   <div>Pon</div><div>Tor</div><div>Sre</div><div>Čet</div><div>Pet</div><div>Sob</div><div>Ned</div>
+  </div>
+  <div id="monthCalendar" class="month-calendar"></div>
+  <div id="calendarDayDetails" class="calendar-day-details"><div class="empty">Klikni dan za podrobnosti.</div></div>
+ </div>
  <div class="card"><form id="examForm">
   <input id="examId" type="hidden">
   <label>Predmet<select id="examSubject" required></select></label>
@@ -380,8 +515,53 @@ function renderMaterials(){
  let q=$("search").value.toLowerCase();let arr=db.materials.filter(m=>(subjectName(m.subject)+" "+m.title+" "+m.chapter+" "+m.subchapter+" "+m.text+" "+m.category).toLowerCase().includes(q));
  $("materialList").innerHTML=arr.length?arr.map(m=>`<div class="card"><span class="badge">${esc(subjectName(m.subject))} · ${esc(m.category)}</span> <span class="badge ${m.status==="done"?"done-badge":m.status==="learning"?"learning-badge":"received-badge"}">${m.status==="done"?"predelano":m.status==="learning"?"v učenju":"prejeto"}</span><h3 style="margin-top:9px">${esc(m.title)}</h3><div class="small muted">${esc(m.chapter||"Brez poglavja")}${m.subchapter?" → "+esc(m.subchapter):""}</div><p class="muted">${esc(m.text.slice(0,320))}${m.text.length>320?"…":""}</p>${m.nextReview?`<div class="small muted">🔁 Naslednja ponovitev: ${esc(m.nextReview)}</div>`:""}${(m.photos||[]).length?`<div class="material-photos" data-material-photos="${m.id}"></div>`:""}${(m.attachments||[]).length?`<div class="asset-row" data-material-files="${m.id}"></div>`:""}<div class="level"><button onclick="setMastery('${m.id}',0)" ${m.mastery===0?'class="warn"':''}>Ne znam</button><button onclick="setMastery('${m.id}',1)" ${m.mastery===1?'class="warn"':''}>Težko</button><button onclick="setMastery('${m.id}',2)" ${m.mastery===2?'class="ok"':''}>Skoraj</button><button onclick="setMastery('${m.id}',3)" ${m.mastery===3?'class="ok"':''}>Znam</button></div><div class="row" style="margin-top:10px"><button onclick="toggleDone('${m.id}')">${m.done?"Vrni med učenje":"Označi kot naučeno"}</button><button onclick="editMaterial('${m.id}')">Uredi</button><button class="danger" onclick="removeMaterial('${m.id}')">Izbriši</button></div></div>`).join(""):'<div class="empty">Ni najdene snovi.</div>';
 }
+
+let calendarCursor=new Date(), calendarSelected=localDateKey();
+
+function slMonthName(month){
+ return ["januar","februar","marec","april","maj","junij","julij","avgust","september","oktober","november","december"][month];
+}
+function calendarDateKey(y,m,d){
+ return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+function renderMonthCalendar(){
+ const box=$("monthCalendar"); if(!box) return;
+ const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth();
+ $("calendarTitle").textContent=slMonthName(m).charAt(0).toUpperCase()+slMonthName(m).slice(1)+" "+y;
+ const first=new Date(y,m,1), last=new Date(y,m+1,0);
+ const start=(first.getDay()+6)%7;
+ const cells=[];
+ for(let i=0;i<42;i++){
+  const dayNo=i-start+1, d=new Date(y,m,dayNo), key=localDateKey(d);
+  const current=d.getMonth()===m, today=key===localDateKey(), selected=key===calendarSelected;
+  const dayExams=db.exams.filter(e=>e.date===key).sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99"));
+  const shown=dayExams.slice(0,2);
+  cells.push(`<button type="button" class="cal-day ${current?"":"other"} ${today?"today":""} ${selected?"selected":""}" data-cal-date="${key}">
+    <div class="cal-num">${d.getDate()}</div>
+    ${shown.map(e=>`<span class="cal-event ${dayExams.length>1?"multiple":""}" title="${esc(subjectName(e.subject))}${e.note?" – "+esc(e.note):""}">${e.time?esc(e.time)+" ":""}${esc(subjectName(e.subject))}</span>`).join("")}
+    ${dayExams.length>2?`<div class="cal-more">+${dayExams.length-2} več</div>`:""}
+   </button>`);
+ }
+ box.innerHTML=cells.join("");
+ document.querySelectorAll("[data-cal-date]").forEach(b=>b.onclick=()=>{calendarSelected=b.dataset.calDate;renderMonthCalendar();renderCalendarDayDetails()});
+ renderCalendarDayDetails();
+}
+function renderCalendarDayDetails(){
+ const box=$("calendarDayDetails");if(!box)return;
+ const xs=db.exams.filter(e=>e.date===calendarSelected).sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99"));
+ const d=new Date(calendarSelected+"T12:00:00");
+ const label=d.toLocaleDateString("sl-SI",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ box.innerHTML=`<b>📅 ${esc(label.charAt(0).toUpperCase()+label.slice(1))}</b>`+
+ (xs.length?xs.map(e=>`<div class="calendar-detail-item">
+   <div><b>🎓 ${esc(subjectName(e.subject))}</b>${e.time?` · ${esc(e.time)}`:""}${e.attempt?` · ${esc(String(e.attempt))}. rok`:""}</div>
+   ${e.note?`<div class="exam-note">📝 ${esc(e.note)}</div>`:"<div class='small muted'>Brez opombe.</div>"}
+   <div class="row" style="margin-top:8px"><button onclick="editExam('${e.id}')">Uredi</button><button class="danger" onclick="removeExam('${e.id}')">Izbriši</button></div>
+  </div>`).join(""):`<div class="empty">Na ta dan ni izpita.</div>`);
+}
+
 function renderExams(){
- let exams=[...db.exams].sort((a,b)=>a.date.localeCompare(b.date));$("examList").innerHTML=exams.length?exams.map(e=>{let days=daysUntil(e.date),ms=db.materials.filter(m=>m.subject===e.subject&&!m.done);return `<div class="item"><b>${esc(subjectName(e.subject))}</b><div>${esc(e.date)} ${e.time?"· "+esc(e.time):""} · ${e.attempt?esc(e.attempt)+". rok · ":""}${days>=0?days+" dni":"datum je mimo"}</div>${e.note?`<div class="small">${esc(e.note)}</div>`:""}<div class="muted">${ms.length?`Za ponoviti: ${ms.length}`:"Vsa dodana snov je naučena."}</div><div class="row" style="margin-top:8px"><button onclick="editExam('${e.id}')">Uredi</button><button class="danger" onclick="removeExam('${e.id}')">Izbriši</button></div></div>`}).join(""):'<div class="empty">Ni izpitov.</div>';
+ renderMonthCalendar();
+ let exams=[...db.exams].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""));$("examList").innerHTML=exams.length?exams.map(e=>{let days=daysUntil(e.date),ms=db.materials.filter(m=>m.subject===e.subject&&!m.done);return `<div class="item"><b>${esc(subjectName(e.subject))}</b><div>${esc(e.date)} ${e.time?"· "+esc(e.time):""} · ${e.attempt?esc(e.attempt)+". rok · ":""}${days>=0?days+" dni":"datum je mimo"}</div>${e.note?`<div class="small">${esc(e.note)}</div>`:""}<div class="muted">${ms.length?`Za ponoviti: ${ms.length}`:"Vsa dodana snov je naučena."}</div><div class="row" style="margin-top:8px"><button onclick="editExam('${e.id}')">Uredi</button><button class="danger" onclick="removeExam('${e.id}')">Izbriši</button></div></div>`}).join(""):'<div class="empty">Ni izpitov.</div>';
  let future=exams.find(e=>daysUntil(e.date)>=0);if(future){const same=exams.filter(e=>e.date===future.date);$("nextExam").innerHTML=same.length>1?`<div class="exam-day-alert"><b>⚠️ ${same.length} izpita na isti dan – ${esc(future.date)}</b>${same.map(e=>`<div>${esc(e.time||"Ura ni določena")} · ${esc(subjectName(e.subject))}</div>`).join("")}</div>`:esc(subjectName(future.subject))+" – "+esc(future.date)+(future.time?" · "+esc(future.time):"")}else $("nextExam").textContent="Ni dodanega prihodnjega izpita.";
  const today=localDateKey();ensureTodaySlots();const slots=db.studySlots.filter(s=>s.date===today&&!s.done).sort((a,b)=>a.time.localeCompare(b.time));
  $("todayPlan").innerHTML=db.dayOverrides[today]?.skip?"Danes je prost dan.":slots.length?slots.slice(0,4).map(s=>`<div class="small" style="margin-top:6px"><b>${esc(s.time)}</b> · ${esc(subjectName(s.subject))}: ${esc(s.title||"Učenje")} (${esc(String(s.minutes))} min)</div>`).join(""):"Trenutno ni nenaučene snovi.";
@@ -558,6 +738,10 @@ $("timerPause").onclick=()=>{if(!timerRunning)return;timerElapsed+=Date.now()-ti
 $("timerStop").onclick=()=>{if(timerRunning){timerElapsed+=Date.now()-timerStartAt;timerRunning=false;clearInterval(timerHandle)}const mins=Math.max(1,Math.round(timerElapsed/60000));if(timerElapsed>0){db.studySessions.push({id:uid(),date:localDateKey(),subject:$("timerSubject").value,minutes:mins,created:Date.now()});save()}timerElapsed=0;timerPaint()};
 
 
+
+$("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderMonthCalendar()};
+$("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderMonthCalendar()};
+
 $("materialPdf").onchange=e=>{addPdfFiles(e.target.files);e.target.value=""};
 $("chapterChecklistSubject").onchange=()=>{$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value)};
 $("startMock").onclick=startMockExam;
@@ -577,7 +761,7 @@ $("studySettingsForm").onsubmit=e=>{
  db.studySettings.defaultTime=$("defaultStudyTime").value||"17:00";
  db.studySettings.dailyMinutes=Number($("dailyStudyMinutes").value)||180;
  db.studySettings.blockMinutes=Number($("studyBlockMinutes").value)||45;
- const today=localDateKey();db.dayOverrides[today]={skip:false};db.studySlots=db.studySlots.filter(s=>s.date!==today);save();
+ const today=localDateKey();db.dayOverrides[today]={skip:false};db.studySlots=db.studySlots.filter(s=>s.date!==today);calendarSelected=$("examDate").value;calendarCursor=new Date(calendarSelected+"T12:00:00");save();
 };
 $("addCustomSlot").onclick=()=>{
  const time=prompt("Ob kateri uri se boš učila? (npr. 19:15)",db.studySettings.defaultTime||"17:00");
@@ -732,7 +916,7 @@ const tutorials={
   {icon:"🌿",title:"Če danes ne gre",text:"Danes manj zmanjša obremenitev. Danes ne morem pa odstrani današnje bloke in pusti snov za prihodnje dni."}
  ],
  calendar:[
-  {icon:"📅",title:"Dodaj datum izpita",text:"Izberi predmet, točen datum in po želji tudi uro izpita. Na isti dan lahko dodaš več izpitov. Aplikacija ta datum uporabi pri pripravi učnega načrta.",target:"#examSubject"},
+  {icon:"📅",title:"Dodaj datum izpita",text:"Na mesečnem koledarju vidiš vse izpite. Izberi predmet, datum, uro in opombo; na isti dan lahko dodaš več izpitov. Aplikacija ta datum uporabi pri pripravi učnega načrta.",target:"#examSubject"},
   {icon:"🎯",title:"Zakaj je datum pomemben?",text:"Ko aplikacija pozna datum izpita in ima dodano gradivo, lahko razporedi nenaučeno snov do izpita.",target:"#examDate"}
  ],
  grades:[
