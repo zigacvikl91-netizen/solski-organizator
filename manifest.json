@@ -1,10 +1,12 @@
 {
   "name": "Moj Šolski Organizator",
   "short_name": "Šola",
+  "description": "Osebni organizator za samostojno učenje in izpite.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f5f7",
-  "theme_color": "#f5f5f7",
-  "description": "Brezplačen osebni šolski organizator za učenje."
+  "background_color": "#f6f8ff",
+  "theme_color": "#5b5ce2",
+  "lang": "sl",
+  "id": "./"
 }
