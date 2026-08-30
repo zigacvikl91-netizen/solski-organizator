@@ -768,6 +768,9 @@ $("timerStop").onclick=()=>{if(timerRunning){timerElapsed+=Date.now()-timerStart
 
 
 
+const WEB_PUSH_VAPID_PUBLIC_KEY="BAMJ6nZ8FGBd4Zsy9GsTMrQUpo-ZwnMGLeUJD9_5ssfZm9UpFzy5lQz9r-BJTyLlCw15GRn5_2qfu2X0CNPUtaQ";
+let currentPushSubscription=null;
+
 $("connectWebPush").onclick=registerIphoneWebPush;
 $("copyPushSubscription").onclick=async()=>{const t=$("pushSubscriptionBox").value;if(!t){alert("Najprej poveži Web Push.");return}try{await navigator.clipboard.writeText(t);alert("Push naročnina je kopirana.")}catch{prompt("Kopiraj push naročnino:",t)}};
 restorePushSubscriptionView();
@@ -778,10 +781,10 @@ renderNotificationCenter();scheduleForegroundReminderCheck();
 $("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderMonthCalendar()};
 $("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderMonthCalendar()};
 
-$("materialPdf").onchange=e=>{addPdfFiles(e.target.files);e.target.value=""};
-$("chapterChecklistSubject").onchange=()=>{$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value)};
-$("startMock").onclick=startMockExam;
-$("globalSearch").oninput=()=>{const hits=globalSearchHits($("globalSearch").value);$("globalSearchResults").innerHTML=hits.map(h=>`<div class="search-hit" data-go2="${h.go}"><span class="badge">${esc(h.type)}</span> ${esc(h.title)}</div>`).join("");document.querySelectorAll("[data-go2]").forEach(x=>x.onclick=()=>go(x.dataset.go2))};
+if($("materialPdf"))$("materialPdf").onchange=e=>{addPdfFiles(e.target.files);e.target.value=""};
+if($("chapterChecklistSubject"))$("chapterChecklistSubject").onchange=()=>{$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value)};
+if($("startMock"))$("startMock").onclick=startMockExam;
+if($("globalSearch"))$("globalSearch").oninput=()=>{const hits=globalSearchHits($("globalSearch").value);$("globalSearchResults").innerHTML=hits.map(h=>`<div class="search-hit" data-go2="${h.go}"><span class="badge">${esc(h.type)}</span> ${esc(h.title)}</div>`).join("");document.querySelectorAll("[data-go2]").forEach(x=>x.onclick=()=>go(x.dataset.go2))};
 function applyTheme(){const d=localStorage.getItem("solaDark")==="1";document.body.classList.toggle("dark",d);$("darkModeBtn").textContent=d?"☀️ Svetli način":"🌙 Temni način"}
 $("darkModeBtn").onclick=()=>{localStorage.setItem("solaDark",localStorage.getItem("solaDark")==="1"?"0":"1");applyTheme()};
 async function sha256(v){const a=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(a)].map(x=>x.toString(16).padStart(2,"0")).join("")}
@@ -982,8 +985,6 @@ function scheduleForegroundReminderCheck(){
 
 
 
-const WEB_PUSH_VAPID_PUBLIC_KEY="BAMJ6nZ8FGBd4Zsy9GsTMrQUpo-ZwnMGLeUJD9_5ssfZm9UpFzy5lQz9r-BJTyLlCw15GRn5_2qfu2X0CNPUtaQ";
-let currentPushSubscription=null;
 
 function urlBase64ToUint8Array(base64String){
  const padding="=".repeat((4-base64String.length%4)%4);
