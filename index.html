@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#5b5ce2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Šola">
+<meta name="apple-mobile-web-app-title" content="Moj Organizator">
 <link rel="manifest" href="manifest.json">
-<title>Moj Šolski Organizator</title>
+<title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -282,6 +282,15 @@ body.dark .confirm-box{background:#1b1e28;color:#f5f7fb}
 button.danger{cursor:pointer}
 .data-repair-note{font-size:12px;color:var(--muted);margin-top:6px}
 
+
+/* V10 stability */
+.form-cancel.hidden-edit{display:none!important}
+.health-ok{border-color:#b9dfc6!important;background:#eefaf2!important;color:#176b3a!important}
+.health-warn{border-color:#f0d19b!important;background:#fff8e8!important;color:#8a5a0b!important}
+.health-error{border-color:#efb4b4!important;background:#fff0f0!important;color:#9b2424!important}
+body.dark .health-ok,body.dark .health-warn,body.dark .health-error{background:#20242f!important;color:#f4f5fb!important}
+button:disabled{opacity:.55;cursor:not-allowed}
+
 </style>
 </head>
 <body>
@@ -312,7 +321,7 @@ button.danger{cursor:pointer}
   <div class="guide-step"><div class="guide-num">6</div><div><b>Če danes ne gre</b><div class="small muted">Izberi <b>Danes manj</b>, če imaš manj časa, ali <b>Danes ne morem</b>, če se ta dan sploh ne moreš učiti. Snov ostane za prihodnje dni.</div></div></div>
   <div class="guide-step"><div class="guide-num">7</div><div><b>Označi, kako dobro znaš</b><div class="small muted">Po učenju pri snovi izberi <b>Ne znam / Težko / Skoraj / Znam</b>. Težje teme se bodo pogosteje pojavile za ponavljanje.</div></div></div>
   <div class="guide-step"><div class="guide-num">8</div><div><b>Po izpitu vpiši oceno</b><div class="small muted">V <b>Ocene</b> dodaj predmet, oceno, datum in opombo. Aplikacija ti izračuna povprečje za vsak predmet.</div></div></div>
-  <div class="guide-step"><div class="guide-num">9</div><div><b>Naredi varnostno kopijo</b><div class="small muted">Občasno pritisni <b>Varnostna kopija</b>. V8 v kopijo vključi tudi fotografije in PDF datoteke.</div></div></div>
+  <div class="guide-step"><div class="guide-num">9</div><div><b>Naredi varnostno kopijo</b><div class="small muted">Občasno pritisni <b>Varnostna kopija</b>. V10 v kopijo vključi tudi fotografije in PDF datoteke.</div></div></div>
 
   <div class="notice small"><b>Obvestila:</b> aplikacija lahko opozori ob izbrani uri, ko je odprta. Za zanesljiva opozorila tudi takrat, ko je zaprta in uporabljaš TikTok ali drugo aplikacijo, bo potreben še brezplačen Web Push del, ki ga lahko dodamo naknadno.</div>
   <div class="guide-actions"><button id="guideStart" class="primary">Razumem – začni</button></div>
@@ -351,7 +360,7 @@ button.danger{cursor:pointer}
  <div id="notificationPermissionStatus" class="notification-status"></div>
  <div id="notificationScheduleList" class="notification-list"></div>
  </div>
- <div class="card"><h3>⚙️ Videz in zasebnost</h3><div class="toolbar"><button id="darkModeBtn">🌙 Temni način</button><button id="pinBtn">🔐 Nastavi PIN</button><button id="lockNowBtn">Zakleni zdaj</button></div><div class="file-note">PIN je lokalna zaščita aplikacije na tej napravi.</div></div>
+ <div class="card"><h3>⚙️ Videz, zasebnost in diagnostika</h3><div class="toolbar"><button id="darkModeBtn">🌙 Temni način</button><button id="pinBtn">🔐 Nastavi PIN</button><button id="lockNowBtn">Zakleni zdaj</button><button id="runDiagnosticsBtn">🩺 Preveri aplikacijo</button></div><div class="file-note">PIN je lokalna zaščita aplikacije na tej napravi.</div><div id="diagnosticsResult" class="notification-status" style="margin-top:10px">Diagnostika še ni bila zagnana.</div></div>
  <div class="card"><div class="hero"><h3>Hitro dodaj</h3><button id="repeatTutorials">Ponovi vodiče</button></div><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
  <div class="card"><h3>Obnovi podatke</h3><input id="importFile" type="file" accept="application/json"><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
 </section>
@@ -531,57 +540,52 @@ button.danger{cursor:pointer}
 <script>
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
+function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
 function loadDbSafe(){
-  const raw=localStorage.getItem(KEY);
-  if(!raw)return structuredClone(EMPTY_DB);
-  try{return JSON.parse(raw)}
-  catch(err){
-    console.error("Poškodovani lokalni podatki:",err);
-    localStorage.setItem(KEY+"_corrupt_"+Date.now(),raw);
-    return structuredClone(EMPTY_DB);
-  }
+ let raw=null;
+ try{raw=localStorage.getItem(KEY)}catch(err){console.error("LocalStorage ni dosegljiv:",err);return cloneEmptyDb()}
+ if(!raw)return cloneEmptyDb();
+ try{const x=JSON.parse(raw);return x&&typeof x==="object"?x:cloneEmptyDb()}
+ catch(err){console.error("Poškodovani lokalni podatki:",err);try{localStorage.setItem(KEY+"_corrupt_"+Date.now(),raw)}catch{}return cloneEmptyDb()}
 }
 let db=loadDbSafe();
 function normalizeDb(){
-  for(const k of ["subjects","materials","exams","teachers","grades","studySlots","questions","studySessions","freeDays","quickNotes","mockHistory"])if(!Array.isArray(db[k]))db[k]=[];
-  db.studySettings=(db.studySettings&&typeof db.studySettings==="object")?db.studySettings:{};
-  db.studySettings.defaultTime??="17:00";db.studySettings.dailyMinutes??=180;db.studySettings.blockMinutes??=45;
-  db.dayOverrides=(db.dayOverrides&&typeof db.dayOverrides==="object")?db.dayOverrides:{};
-  db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};
-  db.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":((m.mastery||0)>0?"learning":"received"));m.nextReview??=null});
-  const subjectIds=new Set(db.subjects.map(s=>s.id));
-  db.materials=db.materials.filter(m=>subjectIds.has(m.subject));
-  db.exams=db.exams.filter(e=>subjectIds.has(e.subject));
-  db.grades=db.grades.filter(g=>subjectIds.has(g.subject));
-  db.studySlots=db.studySlots.filter(s=>!s.subject||subjectIds.has(s.subject));
-  db.questions=db.questions.filter(q=>subjectIds.has(q.subject));
-  db.teachers.forEach(t=>{if(t.subject&&!subjectIds.has(t.subject))t.subject=""});
+ const mk=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+ for(const k of ["subjects","materials","exams","teachers","grades","studySlots","questions","studySessions","freeDays","quickNotes","mockHistory"])if(!Array.isArray(db[k]))db[k]=[];
+ db.studySettings=(db.studySettings&&typeof db.studySettings==="object")?db.studySettings:{};
+ db.studySettings.defaultTime=typeof db.studySettings.defaultTime==="string"?db.studySettings.defaultTime:"17:00";
+ db.studySettings.dailyMinutes=Math.max(30,Number(db.studySettings.dailyMinutes)||180);
+ db.studySettings.blockMinutes=Math.max(15,Number(db.studySettings.blockMinutes)||45);
+ db.dayOverrides=(db.dayOverrides&&typeof db.dayOverrides==="object")?db.dayOverrides:{};
+ db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};
+ const seen=new Set();
+ db.subjects=db.subjects.filter(s=>s&&typeof s==="object").map(s=>{if(!s.id||seen.has(String(s.id)))s.id=mk();s.id=String(s.id);seen.add(s.id);s.name=String(s.name||"Neimenovan predmet");s.desc=String(s.desc||"");s.target=String(s.target||"");s.completed=!!s.completed;return s});
+ const valid=new Set(db.subjects.map(s=>s.id));
+ const orphans=[];
+ [db.materials,db.exams,db.grades,db.questions].forEach(arr=>arr.forEach(x=>{if(x&&x.subject&&!valid.has(String(x.subject)))orphans.push(x)}));
+ if(orphans.length){const id="recovered_"+mk();db.subjects.push({id,name:"Obnovljeni podatki",desc:"Samodejno obnovljene vsebine brez veljavnega predmeta.",target:"",completed:false});valid.add(id);orphans.forEach(x=>x.subject=id)}
+ db.materials=db.materials.filter(m=>m&&typeof m==="object").map(m=>({...m,id:String(m.id||mk()),subject:String(m.subject||""),chapter:String(m.chapter||""),subchapter:String(m.subchapter||""),title:String(m.title||"Neimenovano gradivo"),text:String(m.text||""),priority:Math.min(3,Math.max(1,Number(m.priority)||2)),minutes:Math.min(360,Math.max(5,Number(m.minutes)||45)),photos:Array.isArray(m.photos)?m.photos.map(String):[],attachments:Array.isArray(m.attachments)?m.attachments.map(String):[],category:String(m.category||"Splošna snov"),done:!!m.done,mastery:Math.min(3,Math.max(0,Number(m.mastery)||0)),status:String(m.status||(m.done?"done":((Number(m.mastery)||0)>0?"learning":"received"))),nextReview:m.nextReview?String(m.nextReview):null,created:Number(m.created)||Date.now()}));
+ db.exams=db.exams.filter(e=>e&&typeof e==="object").map(e=>({...e,id:String(e.id||mk()),subject:String(e.subject||""),date:String(e.date||""),time:String(e.time||""),attempt:String(e.attempt||"1"),note:String(e.note||"")}));
+ db.teachers=db.teachers.filter(t=>t&&typeof t==="object").map(t=>({...t,id:String(t.id||mk()),name:String(t.name||"Neimenovan učitelj"),subject:valid.has(String(t.subject||""))?String(t.subject||""):"",email:String(t.email||""),phone:String(t.phone||""),note:String(t.note||"")}));
+ db.grades=db.grades.filter(g=>g&&typeof g==="object").map(g=>({...g,id:String(g.id||mk()),subject:String(g.subject||""),value:Math.min(5,Math.max(1,Number(g.value)||1)),date:String(g.date||""),type:String(g.type||"Pisno"),note:String(g.note||""),created:Number(g.created)||Date.now()}));
+ db.studySlots=db.studySlots.filter(s=>s&&typeof s==="object").map(s=>({...s,id:String(s.id||mk()),date:String(s.date||""),time:String(s.time||""),minutes:Math.min(360,Math.max(5,Number(s.minutes)||45)),materialId:String(s.materialId||""),subject:valid.has(String(s.subject||""))?String(s.subject||""):"",title:String(s.title||"Učenje"),done:!!s.done}));
+ db.questions=db.questions.filter(q=>q&&typeof q==="object").map(q=>({...q,id:String(q.id||mk()),subject:String(q.subject||""),text:String(q.text||""),created:Number(q.created)||Date.now()}));
+ db.studySessions=db.studySessions.filter(x=>x&&typeof x==="object").map(x=>({...x,id:String(x.id||mk()),date:String(x.date||""),subject:valid.has(String(x.subject||""))?String(x.subject||""):"",minutes:Math.max(0,Number(x.minutes)||0),created:Number(x.created)||Date.now()}));
+ db.freeDays=[...new Set(db.freeDays.filter(x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)))];
+ db.quickNotes=db.quickNotes.filter(n=>n&&typeof n==="object").map(n=>({...n,id:String(n.id||mk()),text:String(n.text||""),created:Number(n.created)||Date.now()}));
+ db.mockHistory=db.mockHistory.filter(x=>x&&typeof x==="object");
 }
 normalizeDb();
-let flashIndex=0, flashAnswer=false, quizIndex=0, quizAnswered=false;
+let flashIndex=0,flashAnswer=false,quizIndex=0,quizAnswered=false;
 const $=id=>document.getElementById(id);
 let toastTimer=null;
-function toast(msg){
-  const el=$("appToast");if(!el)return;
-  el.textContent=msg;el.classList.add("show");clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
-}
-function persist(){
-  normalizeDb();
-  localStorage.setItem(KEY,JSON.stringify(db));
-}
-const save=()=>{persist();try{render()}catch(err){console.error("Napaka pri izrisu:",err);toast("Podatki so shranjeni, prikaz pa je naletel na napako.")}};
+function toast(msg){const el=$("appToast");if(!el)return;el.textContent=msg;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2200)}
+function persist(){normalizeDb();try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(err){console.error("Shranjevanje ni uspelo:",err);toast("Shranjevanje ni uspelo. Preveri prostor v brskalniku.");return false}}
+function safeRenderPart(name,fn){try{fn()}catch(err){console.error("Napaka pri prikazu "+name+":",err)}}
+const save=()=>{persist();render()};
 function askConfirm(title,text,okLabel="Izbriši"){
-  return new Promise(resolve=>{
-    const ov=$("confirmOverlay"),ok=$("confirmOk"),cancel=$("confirmCancel");
-    $("confirmTitle").textContent=title;$("confirmText").textContent=text;ok.textContent=okLabel;
-    ov.classList.remove("hidden");ov.setAttribute("aria-hidden","false");
-    const done=v=>{ov.classList.add("hidden");ov.setAttribute("aria-hidden","true");ok.onclick=null;cancel.onclick=null;ov.onclick=null;resolve(v)};
-    ok.onclick=()=>done(true);cancel.onclick=()=>done(false);
-    ov.onclick=e=>{if(e.target===ov)done(false)};
-  });
+ return new Promise(resolve=>{const ov=$("confirmOverlay"),ok=$("confirmOk"),cancel=$("confirmCancel");if(!ov||!ok||!cancel){resolve(window.confirm(text));return}$("confirmTitle").textContent=title;$("confirmText").textContent=text;ok.textContent=okLabel;ov.classList.remove("hidden");ov.setAttribute("aria-hidden","false");const key=e=>{if(e.key==="Escape")done(false)};const done=v=>{ov.classList.add("hidden");ov.setAttribute("aria-hidden","true");ok.onclick=null;cancel.onclick=null;ov.onclick=null;document.removeEventListener("keydown",key);resolve(v)};ok.onclick=()=>done(true);cancel.onclick=()=>done(false);ov.onclick=e=>{if(e.target===ov)done(false)};document.addEventListener("keydown",key)})
 }
-
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function go(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));scrollTo(0,0);if(typeof startTabTutorial==="function")startTabTutorial(id)}
@@ -597,18 +601,23 @@ function categorize(title,text){
 }
 function cardsFrom(m){let parts=splitSentences(m.text).slice(0,12);if(!parts.length)parts=[m.title];return parts.map((p,i)=>({q:i===0?`Kaj moraš vedeti o temi »${m.title}«?`:`Pojasni trditev iz teme »${m.title}«:`,a:p,subject:m.subject}))}
 function quizItems(){const mats=db.materials.filter(m=>splitSentences(m.text).length>=1);let out=[];mats.forEach(m=>{const ss=splitSentences(m.text);ss.slice(0,5).forEach(s=>{const distractors=db.materials.filter(x=>x.id!==m.id).map(x=>x.title).slice(0,3);const answer=m.title;const choices=[answer,...distractors];while(choices.length<4)choices.push(["Definicije","Primeri","Ključni pojmi","Postopki"][choices.length-1]||"Druga tema");choices.sort(()=>Math.random()-.5);out.push({q:`V katero temo najbolj spada naslednja trditev?\n${s}`,answer,choices,subject:m.subject,materialId:m.id})})});return out}
-function daysUntil(date){const today=new Date();today.setHours(0,0,0,0);const d=new Date(date+"T00:00:00");return Math.ceil((d-today)/86400000)}
+function daysUntil(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||"")))return -999999;const today=new Date();today.setHours(0,0,0,0);const d=new Date(date+"T00:00:00");if(Number.isNaN(d.getTime()))return -999999;return Math.ceil((d-today)/86400000)}
 function buildPlan(){
- const plans=[];const exams=[...db.exams].sort((a,b)=>a.date.localeCompare(b.date)).filter(e=>daysUntil(e.date)>=0);
- exams.forEach(e=>{const remaining=db.materials.filter(m=>m.subject===e.subject&&!m.done).sort((a,b)=>(a.mastery||0)-(b.mastery||0)||b.priority-a.priority||a.created-b.created);const d=Math.max(1,daysUntil(e.date));remaining.forEach((m,i)=>{const weight=(4-(m.mastery||0))*m.priority;const slot=Math.min(d-1,Math.floor(i*d/Math.max(1,remaining.length)));const date=new Date();date.setHours(0,0,0,0);date.setDate(date.getDate()+slot);let key=localDateKey(date),guard=0;while((db.freeDays||[]).includes(key)&&guard++<14){date.setDate(date.getDate()+1);key=localDateKey(date)}if(key>e.date)key=e.date;plans.push({date:key,subject:e.subject,title:m.title,mastery:m.mastery||0,weight,exam:e.date,id:m.id,minutes:m.minutes||45})})});
+ const plans=[],bySubject=new Map();
+ [...db.exams].filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||"")).forEach(e=>{if(!bySubject.has(e.subject))bySubject.set(e.subject,e)});
+ for(const e of bySubject.values()){
+  const remaining=db.materials.filter(m=>m.subject===e.subject&&!m.done).sort((a,b)=>(a.mastery||0)-(b.mastery||0)||(b.priority||2)-(a.priority||2)||(a.created||0)-(b.created||0));
+  const d=Math.max(1,daysUntil(e.date));
+  remaining.forEach((m,i)=>{const weight=(4-(m.mastery||0))*(m.priority||2),slot=Math.min(d-1,Math.floor(i*d/Math.max(1,remaining.length)));const date=new Date();date.setHours(0,0,0,0);date.setDate(date.getDate()+slot);let key=localDateKey(date),guard=0;while((db.freeDays||[]).includes(key)&&guard++<14){date.setDate(date.getDate()+1);key=localDateKey(date)}if(key>e.date)key=e.date;plans.push({date:key,subject:e.subject,title:m.title,mastery:m.mastery||0,weight,exam:e.date,id:m.id,minutes:m.minutes||45})});
+ }
  return plans.sort((a,b)=>a.date.localeCompare(b.date)||b.weight-a.weight)
 }
+function setSelectOptions(id,htmlOptions,preferredValue){const el=$(id);if(!el)return;const current=preferredValue!==undefined?preferredValue:el.value;el.innerHTML=htmlOptions;if(current&&[...el.options].some(o=>o.value===String(current)))el.value=String(current)}
 function render(){
- $("materialSubject").innerHTML=opts();$("examSubject").innerHTML=opts();$("teacherSubject").innerHTML=opts("Brez predmeta");$("gradeSubject").innerHTML=opts();
- $("sSubjects").textContent=db.subjects.length;
- const done=db.materials.filter(m=>m.done).length,total=db.materials.length;$("sPending").textContent=total-done;$("sProgress").textContent=(total?Math.round(done/total*100):0)+"%";
+ setSelectOptions("materialSubject",opts());setSelectOptions("examSubject",opts());setSelectOptions("teacherSubject",opts("Brez predmeta"));setSelectOptions("gradeSubject",opts());
+ $("sSubjects").textContent=db.subjects.length;const done=db.materials.filter(m=>m.done).length,total=db.materials.length;$("sPending").textContent=total-done;$("sProgress").textContent=(total?Math.round(done/total*100):0)+"%";
  const weak=db.materials.filter(m=>(m.mastery||0)<=1&&!m.done).slice(0,4);$("weakTopics").innerHTML=weak.length?weak.map(m=>`<div class="small">• ${esc(subjectName(m.subject))}: ${esc(m.title)}</div>`).join(""):"Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.";
- renderSubjects();renderMaterials();renderExams();renderPlanner();renderGrades();renderTeachers();renderFlash();renderQuiz();renderStudyPlan();renderV7Extras();renderV8Extras();renderNotificationCenter();
+ [["predmeti",renderSubjects],["gradivo",renderMaterials],["izpiti",renderExams],["plan",renderPlanner],["ocene",renderGrades],["učitelji",renderTeachers],["kartice",renderFlash],["kviz",renderQuiz],["učni načrt",renderStudyPlan],["V7",renderV7Extras],["V8",renderV8Extras],["obvestila",renderNotificationCenter]].forEach(([name,fn])=>safeRenderPart(name,fn));
 }
 function renderSubjects(){
  $("subjectList").innerHTML=db.subjects.length?db.subjects.map(s=>{let ms=db.materials.filter(m=>m.subject===s.id),d=ms.filter(m=>m.done).length,p=ms.length?Math.round(d/ms.length*100):0;const chapters=[...new Set(ms.map(m=>m.chapter).filter(Boolean))],chapterDone=chapters.filter(ch=>db.materials.filter(m=>m.subject===s.id&&m.chapter===ch).every(m=>m.done)).length;return `<div class="card subject-card"><div class="hero"><div><h3>${esc(s.name)}</h3><div class="muted small">${esc(s.desc||"")}</div><span class="muted">${ms.length} vsebin · ✅ ${chapterDone}/${chapters.length||0} poglavij</span></div><div class="row"><button class="ok" onclick="toggleSubjectComplete(\'${s.id}\')">${s.completed?"Ponovno odpri":"✓ Opravljen predmet"}</button><button onclick="editSubject('${s.id}')">Uredi</button><button class="danger" onclick="removeSubject('${s.id}')">Izbriši</button></div></div><div class="progress" style="margin-top:12px"><i style="width:${p}%"></i></div>${chapters.length?`<div class="tree">${chapters.map(ch=>`<div class="chapter"><b>${esc(ch)}</b><div class="tiny muted">${ms.filter(m=>m.chapter===ch).map(m=>esc(m.subchapter||m.title)).join(" · ")}</div></div>`).join("")}</div>`:""}</div>`}).join(""):'<div class="empty">Dodaj prvi predmet.</div>';
@@ -628,6 +637,8 @@ function calendarDateKey(y,m,d){
 }
 function renderMonthCalendar(){
  const box=$("monthCalendar"); if(!box) return;
+ if(!(calendarCursor instanceof Date)||Number.isNaN(calendarCursor.getTime()))calendarCursor=new Date();
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(calendarSelected||"")))calendarSelected=localDateKey();
  const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth();
  $("calendarTitle").textContent=slMonthName(m).charAt(0).toUpperCase()+slMonthName(m).slice(1)+" "+y;
  const first=new Date(y,m,1), last=new Date(y,m+1,0);
@@ -668,7 +679,7 @@ function renderExams(){
  const today=localDateKey();ensureTodaySlots();const slots=db.studySlots.filter(s=>s.date===today&&!s.done).sort((a,b)=>a.time.localeCompare(b.time));
  $("todayPlan").innerHTML=db.dayOverrides[today]?.skip?"Danes je prost dan.":slots.length?slots.slice(0,4).map(s=>`<div class="small" style="margin-top:6px"><b>${esc(s.time)}</b> · ${esc(subjectName(s.subject))}: ${esc(s.title||"Učenje")} (${esc(String(s.minutes))} min)</div>`).join(""):"Trenutno ni nenaučene snovi.";
 }
-function renderStudyPlan(){const plan=buildPlan(),today=new Date().toISOString().slice(0,10);if(!plan.length){$("studyPlan").innerHTML='<div class="empty">Dodaj izpit in nenaučeno snov, da se ustvari načrt.</div>';return}const by={};plan.forEach(p=>(by[p.date]??=[]).push(p));$("studyPlan").innerHTML=Object.entries(by).slice(0,28).map(([date,items])=>`<div class="plan-day ${date===today?"today":""}"><b>${date===today?"Danes · ":""}${esc(date)}</b>${items.map(i=>`<div class="small" style="margin-top:6px">${esc(subjectName(i.subject))}: ${esc(i.title)} ${i.mastery<=1?'<span class="badge warn">ponovi</span>':""}</div>`).join("")}</div>`).join("")}
+function renderStudyPlan(){const plan=buildPlan(),today=localDateKey();if(!plan.length){$("studyPlan").innerHTML='<div class="empty">Dodaj izpit in nenaučeno snov, da se ustvari načrt.</div>';return}const by={};plan.forEach(p=>(by[p.date]??=[]).push(p));$("studyPlan").innerHTML=Object.entries(by).slice(0,28).map(([date,items])=>`<div class="plan-day ${date===today?"today":""}"><b>${date===today?"Danes · ":""}${esc(date)}</b>${items.map(i=>`<div class="small" style="margin-top:6px">${esc(subjectName(i.subject))}: ${esc(i.title)} ${i.mastery<=1?'<span class="badge warn">ponovi</span>':""}</div>`).join("")}</div>`).join("")}
 
 function localDateKey(d=new Date()){
  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
@@ -768,85 +779,27 @@ $("subjectForm").onsubmit=e=>{
    db.subjects.push({id:uid(),name,desc,target:$("subjectTarget").value,completed:false});
    toast("Predmet je dodan.");
  }
- e.target.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";save();
+ e.target.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";setEditMode("subjectSaveBtn",false);save();
 };
-$("materialForm").onsubmit=e=>{
-  e.preventDefault();
-  let id=$("materialId").value;
-  let subject=$("materialSubject").value;
-  const newSubjectName=$("materialNewSubject").value.trim();
-
-  if(!subject && newSubjectName){
-    let existing=db.subjects.find(s=>s.name.toLowerCase()===newSubjectName.toLowerCase());
-    if(existing){
-      subject=existing.id;
-    }else{
-      const newSub={id:uid(),name:newSubjectName,desc:""};
-      db.subjects.push(newSub);
-      subject=newSub.id;
-    }
-  }
-
-  const title=$("materialTitle").value.trim();
-  const text=$("materialText").value.trim();
-
-  if(!subject){
-    alert("Izberi predmet ali klikni »Dodaj nov predmet tukaj« in ga vpiši.");
-    return;
-  }
-  if(!title){
-    alert("Vpiši naslov snovi.");
-    return;
-  }
-
-  const obj={
-    id:id||uid(),
-    subject,
-    chapter:$("materialChapter").value.trim(),
-    subchapter:$("materialSubchapter").value.trim(),
-    title,
-    text,
-    priority:+$("materialPriority").value,
-    minutes:Number($("materialMinutes").value)||45,
-    photos:[...pendingMaterialPhotos],
-    attachments:[...pendingMaterialFiles],
-    category:categorize(title,text),
-    done:false,
-    mastery:0,
-    status:"received",
-    nextReview:null,
-    created:Date.now()
-  };
-
-  if(id){
-    const old=db.materials.find(x=>x.id===id);
-    obj.done=old.done;
-    obj.mastery=old.mastery||0;
-    obj.status=old.status||(old.done?"done":(old.mastery>0?"learning":"received"));
-    obj.nextReview=old.nextReview||null;
-    obj.created=old.created;
-    db.materials[db.materials.findIndex(x=>x.id===id)]=obj;
-  }else{
-    db.materials.push(obj);
-  }
-
-  e.target.reset();
-  $("materialId").value="";
-  $("materialSaveBtn").textContent="Razvrsti in dodaj";
-  $("newSubjectWrap").classList.add("hidden");
-  $("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";
-  save();
-  pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];renderPendingPhotos();renderPendingFiles();alert("Snov je dodana pod predmet: "+subjectName(subject));
+$("materialForm").onsubmit=async e=>{
+ e.preventDefault();const id=$("materialId").value;let subject=$("materialSubject").value;const newSubjectName=$("materialNewSubject").value.trim();
+ if(!subject&&newSubjectName){const existing=db.subjects.find(s=>s.name.trim().toLowerCase()===newSubjectName.toLowerCase());if(existing)subject=existing.id;else{const newSub={id:uid(),name:newSubjectName,desc:"",target:"",completed:false};db.subjects.push(newSub);subject=newSub.id}}
+ const title=$("materialTitle").value.trim(),text=$("materialText").value.trim();if(!subject){toast("Izberi predmet ali dodaj novega.");return}if(!title){toast("Vpiši naslov snovi.");return}
+ const old=id?db.materials.find(x=>x.id===id):null;if(id&&!old){toast("Gradiva za urejanje ni več mogoče najti.");await resetMaterialForm();return}
+ const obj={id:id||uid(),subject,chapter:$("materialChapter").value.trim(),subchapter:$("materialSubchapter").value.trim(),title,text,priority:Number($("materialPriority").value)||2,minutes:Number($("materialMinutes").value)||45,photos:[...pendingMaterialPhotos],attachments:[...pendingMaterialFiles],category:categorize(title,text),done:old?.done||false,mastery:old?.mastery||0,status:old?.status||(old?.done?"done":((old?.mastery||0)>0?"learning":"received")),nextReview:old?.nextReview||null,created:old?.created||Date.now()};
+ if(id)db.materials[db.materials.findIndex(x=>x.id===id)]=obj;else db.materials.push(obj);persist();
+ if(old){for(const assetId of [...editingOriginalPhotos,...editingOriginalFiles])if(!obj.photos.includes(assetId)&&!obj.attachments.includes(assetId)){try{await photoDelete(assetId)}catch(err){console.warn(err)}}}
+ const wasEdit=!!id;e.target.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";setEditMode("materialSaveBtn",false);$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];await renderPendingPhotos();await renderPendingFiles();render();toast(wasEdit?"Gradivo je posodobljeno.":"Gradivo je dodano pod "+subjectName(subject)+".");
 };
-$("examForm").onsubmit=e=>{e.preventDefault();let id=$("examId").value;if(!$("examSubject").value||!$("examDate").value)return;const obj={id:id||uid(),subject:$("examSubject").value,date:$("examDate").value,time:$("examTime").value,attempt:$("examAttempt").value,note:$("examNote").value.trim()};if(id)db.exams[db.exams.findIndex(x=>x.id===id)]=obj;else db.exams.push(obj);e.target.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit";save()};
+$("examForm").onsubmit=e=>{e.preventDefault();const id=$("examId").value,subject=$("examSubject").value,date=$("examDate").value;if(!subject){toast("Izberi predmet.");return}if(!date){toast("Izberi datum izpita.");return}const obj={id:id||uid(),subject,date,time:$("examTime").value,attempt:$("examAttempt").value||"1",note:$("examNote").value.trim()};const idx=id?db.exams.findIndex(x=>x.id===id):-1;if(id&&idx<0){toast("Izpita za urejanje ni več mogoče najti.");resetExamForm();return}if(id)db.exams[idx]=obj;else db.exams.push(obj);calendarSelected=date;calendarCursor=new Date(date+"T12:00:00");e.target.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit";setEditMode("examSaveBtn",false);save();toast(id?"Izpit je posodobljen.":"Izpit je dodan.")};
 
 
 $("materialCamera").onchange=e=>{addPhotoFiles(e.target.files);e.target.value=""};$("materialGallery").onchange=e=>{addPhotoFiles(e.target.files);e.target.value=""};$("photoViewerClose").onclick=closePhotoViewer;$("photoViewer").onclick=e=>{if(e.target===$("photoViewer"))closePhotoViewer()};
-$("questionForm").onsubmit=e=>{e.preventDefault();const text=$("questionText").value.trim(),subject=$("questionSubject").value;if(!text||!subject)return;db.questions.push({id:uid(),subject,text,created:Date.now()});e.target.reset();save()};
+$("questionForm").onsubmit=e=>{e.preventDefault();const text=$("questionText").value.trim(),subject=$("questionSubject").value;if(!subject){toast("Izberi predmet.");return}if(!text){toast("Vpiši vprašanje.");return}db.questions.push({id:uid(),subject,text,created:Date.now()});e.target.reset();save();toast("Vprašanje je dodano.")};
 window.removeQuestion=async id=>{const q=db.questions.find(x=>x.id===id);if(!q)return;if(!await askConfirm("Izbrišem vprašanje?",q.text))return;db.questions=db.questions.filter(x=>x.id!==id);save();toast("Vprašanje je izbrisano.");};
-$("quickNoteBtn").onclick=()=>{const text=$("quickNoteInput").value.trim();if(!text)return;db.quickNotes.push({id:uid(),text,created:Date.now()});$("quickNoteInput").value="";save()};
+$("quickNoteBtn").onclick=()=>{const text=$("quickNoteInput").value.trim();if(!text){toast("Najprej napiši zapisek.");return}db.quickNotes.push({id:uid(),text,created:Date.now()});$("quickNoteInput").value="";save();toast("Zapisek je dodan.")};
 window.removeQuickNote=async id=>{const n=db.quickNotes.find(x=>x.id===id);if(!n)return;if(!await askConfirm("Izbrišem zapisek?",n.text))return;db.quickNotes=db.quickNotes.filter(x=>x.id!==id);save();toast("Zapisek je izbrisan.");};
-$("addFreeDay").onclick=()=>{const d=$("freeDayDate").value;if(!d)return;if(!db.freeDays.includes(d))db.freeDays.push(d);db.dayOverrides[d]={skip:true};save()};
+$("addFreeDay").onclick=()=>{const d=$("freeDayDate").value;if(!d){toast("Izberi datum.");return}if(!db.freeDays.includes(d))db.freeDays.push(d);db.dayOverrides[d]={skip:true};save();toast("Prosti dan je dodan.")};
 window.removeFreeDay=async d=>{if(!await askConfirm("Odstranim prosti dan?",d,"Odstrani"))return;db.freeDays=db.freeDays.filter(x=>x!==d);delete db.dayOverrides[d];save();toast("Prosti dan je odstranjen.");};
 window.toggleSubjectComplete=id=>{const s=db.subjects.find(x=>x.id===id);if(s){s.completed=!s.completed;save()}};
 $("extraStudyBtn").onclick=()=>{const sub=prompt("Vpiši ime predmeta za dodatno učenje ali pusti prazno za priporočilo:","");let subject=db.subjects.find(s=>s.name.toLowerCase()===(sub||"").toLowerCase())?.id; if(!subject){const cand=[...db.subjects].sort((a,b)=>subjectReadiness(a.id)-subjectReadiness(b.id))[0];subject=cand?.id||""}const mins=Number(prompt("Koliko dodatnih minut?","45"))||45;const time=prompt("Ob kateri uri?","20:00")||"20:00";db.studySlots.push({id:uid(),date:localDateKey(),time,minutes:mins,subject,title:"Dodatno učenje",done:false,extra:true});save()};
@@ -866,10 +819,8 @@ let currentPushSubscription=null;
 
 $("connectWebPush").onclick=registerIphoneWebPush;
 $("copyPushSubscription").onclick=async()=>{const t=$("pushSubscriptionBox").value;if(!t){alert("Najprej poveži Web Push.");return}try{await navigator.clipboard.writeText(t);alert("Push naročnina je kopirana.")}catch{prompt("Kopiraj push naročnino:",t)}};
-restorePushSubscriptionView();
 $("enableNotifications").onclick=ensureNotificationPermission;
 $("testNotification").onclick=()=>showStudyNotification("Šolski organizator","Testno obvestilo deluje. 🔔");
-renderNotificationCenter();scheduleForegroundReminderCheck();
 
 $("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderMonthCalendar()};
 $("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderMonthCalendar()};
@@ -888,26 +839,17 @@ $("unlockBtn").onclick=async()=>{const h=await sha256($("unlockPin").value);if(h
 $("unlockPin").onkeydown=e=>{if(e.key==="Enter")$("unlockBtn").click()};
 applyTheme();if(localStorage.getItem("solaPinHash")&&sessionStorage.getItem("solaUnlocked")!=="1")showLock();
 
-$("studySettingsForm").onsubmit=e=>{
- e.preventDefault();
- db.studySettings.defaultTime=$("defaultStudyTime").value||"17:00";
- db.studySettings.dailyMinutes=Number($("dailyStudyMinutes").value)||180;
- db.studySettings.blockMinutes=Number($("studyBlockMinutes").value)||45;
- const today=localDateKey();db.dayOverrides[today]={skip:false};db.studySlots=db.studySlots.filter(s=>s.date!==today);calendarSelected=$("examDate").value;calendarCursor=new Date(calendarSelected+"T12:00:00");save();
-};
+$("studySettingsForm").onsubmit=e=>{e.preventDefault();db.studySettings.defaultTime=$("defaultStudyTime").value||"17:00";db.studySettings.dailyMinutes=Math.max(30,Number($("dailyStudyMinutes").value)||180);db.studySettings.blockMinutes=Math.max(15,Number($("studyBlockMinutes").value)||45);const today=localDateKey();db.dayOverrides[today]={...(db.dayOverrides[today]||{}),skip:false};db.studySlots=db.studySlots.filter(s=>s.date!==today);save();toast("Nastavitve učenja so shranjene in današnji plan je osvežen.")};
 $("addCustomSlot").onclick=()=>{
  const time=prompt("Ob kateri uri se boš učila? (npr. 19:15)",db.studySettings.defaultTime||"17:00");
- if(!time||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){if(time)alert("Vpiši uro v obliki HH:MM.");return}
+ if(!time||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){if(time)alert("Vpiši uro v obliki HH:MM.");return}
  const title=prompt("Kaj se boš učila?","Ponavljanje")||"Učenje";
  const mins=Number(prompt("Koliko minut?",String(db.studySettings.blockMinutes||45)))||45;
  db.dayOverrides[localDateKey()]={skip:false};
  db.studySlots.push({id:uid(),date:localDateKey(),time,minutes:Math.max(5,Math.min(360,mins)),materialId:"",subject:"",title,done:false});
  save();
 };
-$("skipTodayBtn").onclick=()=>{
- if(!confirm("Danes označim kot prost dan?"))return;
- const today=localDateKey();db.dayOverrides[today]={skip:true};db.studySlots=db.studySlots.filter(s=>s.date!==today);save();
-};
+$("skipTodayBtn").onclick=async()=>{if(!await askConfirm("Danes brez učenja?","Današnji učni bloki bodo odstranjeni. Gradivo in izpiti ostanejo shranjeni.","Da, danes ne morem"))return;const today=localDateKey();db.dayOverrides[today]={skip:true};db.studySlots=db.studySlots.filter(s=>s.date!==today);save();toast("Danes je označeno kot prost dan.")};
 $("studyLessBtn").onclick=()=>{
  const mins=Number(prompt("Koliko minut se danes lahko učiš?","60"));if(!mins||mins<5)return;
  const today=localDateKey();ensureTodaySlots();let left=mins;
@@ -925,19 +867,14 @@ $("notificationBtn").onclick=async()=>{
   }
  }catch(e){alert("Obvestil trenutno ni bilo mogoče vključiti. Na iPhonu mora biti aplikacija dodana na začetni zaslon.")}
 };
-$("gradeForm").onsubmit=e=>{
- e.preventDefault();const id=$("gradeId").value,subject=$("gradeSubject").value,value=Number($("gradeValue").value);if(!subject||!value)return;
- const obj={id:id||uid(),subject,value,date:$("gradeDate").value,type:$("gradeType").value,note:$("gradeNote").value.trim(),created:id?(db.grades.find(g=>g.id===id)?.created||Date.now()):Date.now()};
- if(id)db.grades[db.grades.findIndex(g=>g.id===id)]=obj;else db.grades.push(obj);
- e.target.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";save();
-};
+$("gradeForm").onsubmit=e=>{e.preventDefault();const id=$("gradeId").value,subject=$("gradeSubject").value,value=Number($("gradeValue").value);if(!subject){toast("Izberi predmet.");return}if(!Number.isInteger(value)||value<1||value>5){toast("Izberi oceno od 1 do 5.");return}const obj={id:id||uid(),subject,value,date:$("gradeDate").value,type:$("gradeType").value,note:$("gradeNote").value.trim(),created:id?(db.grades.find(g=>g.id===id)?.created||Date.now()):Date.now()};const idx=id?db.grades.findIndex(g=>g.id===id):-1;if(id&&idx<0){toast("Ocene za urejanje ni več mogoče najti.");resetGradeForm();return}if(id)db.grades[idx]=obj;else db.grades.push(obj);e.target.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";$("gradeDate").value=localDateKey();setEditMode("gradeSaveBtn",false);save();toast(id?"Ocena je posodobljena.":"Ocena je shranjena.")};
 window.toggleStudySlot=id=>{const s=db.studySlots.find(x=>x.id===id);if(s){s.done=!s.done;save()}};
 window.removeStudySlot=async id=>{const s=db.studySlots.find(x=>x.id===id);if(!s)return;if(!await askConfirm("Odstranim učni blok?",`${s.time||""} · ${s.title||subjectName(s.subject)}`))return;db.studySlots=db.studySlots.filter(x=>x.id!==id);save();toast("Učni blok je odstranjen.");};
-window.rescheduleSlot=id=>{const s=db.studySlots.find(x=>x.id===id);if(!s)return;const t=prompt("Izberi točno novo uro (npr. 20:30)",s.time);if(!t)return;if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t)){alert("Vpiši uro v obliki HH:MM.");return}s.time=t;s.notifiedAt=null;save()};
+window.rescheduleSlot=id=>{const s=db.studySlots.find(x=>x.id===id);if(!s)return;const t=prompt("Izberi točno novo uro (npr. 20:30)",s.time);if(!t)return;if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)){alert("Vpiši uro v obliki HH:MM.");return}s.time=t;s.notifiedAt=null;save()};
 window.removeGrade=async id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;if(!await askConfirm("Izbrišem oceno?",`${subjectName(g.subject)} · ocena ${g.value}`))return;db.grades=db.grades.filter(x=>x.id!==id);save();toast("Ocena je izbrisana.");};
-window.editGrade=id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;go("grades");$("gradeId").value=g.id;$("gradeSubject").value=g.subject;$("gradeValue").value=String(g.value);$("gradeDate").value=g.date||"";$("gradeType").value=g.type||"Pisno";$("gradeNote").value=g.note||"";$("gradeSaveBtn").textContent="Shrani spremembe"};
+window.editGrade=id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;go("grades");$("gradeId").value=g.id;setSelectOptions("gradeSubject",opts(),g.subject);$("gradeValue").value=String(g.value);$("gradeDate").value=g.date||"";$("gradeType").value=g.type||"Pisno";$("gradeNote").value=g.note||"";$("gradeSaveBtn").textContent="Shrani spremembe";setEditMode("gradeSaveBtn",true);$("gradeForm").scrollIntoView({behavior:"smooth",block:"start"})};
 
-$("teacherForm").onsubmit=e=>{e.preventDefault();const id=$("teacherId").value;const obj={id:id||uid(),name:$("teacherName").value.trim(),subject:$("teacherSubject").value,email:$("teacherEmail").value.trim(),phone:$("teacherPhone").value.trim(),note:$("teacherNote").value.trim()};if(!obj.name)return;if(id)db.teachers[db.teachers.findIndex(x=>x.id===id)]=obj;else db.teachers.push(obj);e.target.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";save()};
+$("teacherForm").onsubmit=e=>{e.preventDefault();const id=$("teacherId").value,name=$("teacherName").value.trim();if(!name){toast("Vpiši ime učitelja.");return}const obj={id:id||uid(),name,subject:$("teacherSubject").value,email:$("teacherEmail").value.trim(),phone:$("teacherPhone").value.trim(),note:$("teacherNote").value.trim()};const idx=id?db.teachers.findIndex(x=>x.id===id):-1;if(id&&idx<0){toast("Učitelja za urejanje ni več mogoče najti.");resetTeacherForm();return}if(id)db.teachers[idx]=obj;else db.teachers.push(obj);e.target.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";setEditMode("teacherSaveBtn",false);save();toast(id?"Učitelj je posodobljen.":"Učitelj je dodan.")};
 $("search").oninput=renderMaterials;$("flipCard").onclick=()=>{flashAnswer=!flashAnswer;renderFlash()};$("nextCard").onclick=()=>{flashAnswer=false;flashIndex++;renderFlash()};$("nextQuiz").onclick=()=>{quizAnswered=false;quizIndex++;renderQuiz()};
 window.setMastery=(id,v)=>{let m=db.materials.find(x=>x.id===id);if(m){m.mastery=v;m.status=v===3?"done":"learning";m.done=v===3;m.nextReview=v===3?null:addDaysKey(localDateKey(),reviewInterval(v));save()}};
 window.toggleDone=id=>{let m=db.materials.find(x=>x.id===id);if(m){m.done=!m.done;if(m.done&&m.mastery<2)m.mastery=2;m.status=m.done?"done":"learning";m.nextReview=m.done?null:addDaysKey(localDateKey(),reviewInterval(m.mastery||1));save()}};
@@ -946,7 +883,7 @@ window.removeMaterial=async id=>{
  if(!await askConfirm("Izbrišem gradivo?",`»${m.title}« bo trajno odstranjeno skupaj s pripetimi fotografijami in PDF datotekami.`))return;
  for(const pid of [...(m.photos||[]),...(m.attachments||[])]){try{await photoDelete(pid)}catch(e){console.warn(e)}}
  db.materials=db.materials.filter(x=>x.id!==id);
- db.studySlots=db.studySlots.filter(x=>x.id!==id&&x.materialId!==id);
+ db.studySlots=db.studySlots.filter(x=>x.materialId!==id);
  save();toast("Gradivo je izbrisano.");
 };
 window.removeExam=async id=>{
@@ -959,10 +896,10 @@ window.removeTeacher=async id=>{
  if(!await askConfirm("Izbrišem učitelja?",t.name))return;
  db.teachers=db.teachers.filter(x=>x.id!==id);save();toast("Učitelj je izbrisan.");
 };
-window.editSubject=id=>{const s=db.subjects.find(x=>x.id===id);if(!s)return;go("subjects");$("subjectId").value=s.id;$("subjectName").value=s.name;$("subjectDesc").value=s.desc||"";$("subjectTarget").value=s.target||"";$("subjectSaveBtn").textContent="Shrani spremembe"};
-window.editMaterial=id=>{const m=db.materials.find(x=>x.id===id);if(!m)return;go("study");$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";$("materialId").value=m.id;$("materialSubject").value=m.subject;$("materialChapter").value=m.chapter||"";$("materialSubchapter").value=m.subchapter||"";$("materialTitle").value=m.title;$("materialText").value=m.text;$("materialPriority").value=m.priority;$("materialMinutes").value=String(m.minutes||45);pendingMaterialPhotos=[...(m.photos||[])];editingOriginalPhotos=[...(m.photos||[])];pendingMaterialFiles=[...(m.attachments||[])];editingOriginalFiles=[...(m.attachments||[])];renderPendingPhotos();renderPendingFiles();$("materialSaveBtn").textContent="Shrani spremembe"};
-window.editExam=id=>{const e=db.exams.find(x=>x.id===id);if(!e)return;go("calendar");$("examId").value=e.id;$("examSubject").value=e.subject;$("examDate").value=e.date;$("examTime").value=e.time||"";$("examAttempt").value=e.attempt||"1";$("examNote").value=e.note||"";$("examSaveBtn").textContent="Shrani spremembe"};
-window.editTeacher=id=>{const t=db.teachers.find(x=>x.id===id);if(!t)return;go("teachers");$("teacherId").value=t.id;$("teacherName").value=t.name;$("teacherSubject").value=t.subject;$("teacherEmail").value=t.email;$("teacherPhone").value=t.phone;$("teacherNote").value=t.note;$("teacherSaveBtn").textContent="Shrani spremembe"};
+window.editSubject=id=>{const s=db.subjects.find(x=>x.id===id);if(!s)return;go("subjects");$("subjectId").value=s.id;$("subjectName").value=s.name;$("subjectDesc").value=s.desc||"";$("subjectTarget").value=s.target||"";$("subjectSaveBtn").textContent="Shrani spremembe";setEditMode("subjectSaveBtn",true);$("subjectForm").scrollIntoView({behavior:"smooth",block:"start"})};
+window.editMaterial=id=>{const m=db.materials.find(x=>x.id===id);if(!m)return;go("study");$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";$("materialId").value=m.id;setSelectOptions("materialSubject",opts(),m.subject);$("materialChapter").value=m.chapter||"";$("materialSubchapter").value=m.subchapter||"";$("materialTitle").value=m.title||"";$("materialText").value=m.text||"";$("materialPriority").value=String(m.priority||2);$("materialMinutes").value=String(m.minutes||45);pendingMaterialPhotos=[...(m.photos||[])];editingOriginalPhotos=[...(m.photos||[])];pendingMaterialFiles=[...(m.attachments||[])];editingOriginalFiles=[...(m.attachments||[])];renderPendingPhotos();renderPendingFiles();$("materialSaveBtn").textContent="Shrani spremembe";setEditMode("materialSaveBtn",true);$("materialForm").scrollIntoView({behavior:"smooth",block:"start"})};
+window.editExam=id=>{const e=db.exams.find(x=>x.id===id);if(!e)return;go("calendar");$("examId").value=e.id;setSelectOptions("examSubject",opts(),e.subject);$("examDate").value=e.date||"";$("examTime").value=e.time||"";$("examAttempt").value=e.attempt||"1";$("examNote").value=e.note||"";$("examSaveBtn").textContent="Shrani spremembe";setEditMode("examSaveBtn",true);$("examForm").scrollIntoView({behavior:"smooth",block:"start"})};
+window.editTeacher=id=>{const t=db.teachers.find(x=>x.id===id);if(!t)return;go("teachers");$("teacherId").value=t.id;$("teacherName").value=t.name||"";setSelectOptions("teacherSubject",opts("Brez predmeta"),t.subject||"");$("teacherEmail").value=t.email||"";$("teacherPhone").value=t.phone||"";$("teacherNote").value=t.note||"";$("teacherSaveBtn").textContent="Shrani spremembe";setEditMode("teacherSaveBtn",true);$("teacherForm").scrollIntoView({behavior:"smooth",block:"start"})};
 window.removeSubject=async id=>{
  const s=db.subjects.find(x=>x.id===id);if(!s)return;
  const mats=db.materials.filter(m=>m.subject===id);
@@ -991,7 +928,7 @@ function openPhotoDB(){return new Promise((res,rej)=>{const q=indexedDB.open(PHO
 async function photoPut(r){const d=await openPhotoDB();return new Promise((res,rej)=>{const t=d.transaction(PHOTO_STORE,"readwrite");t.objectStore(PHOTO_STORE).put(r);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 async function photoGet(id){const d=await openPhotoDB();return new Promise((res,rej)=>{const q=d.transaction(PHOTO_STORE).objectStore(PHOTO_STORE).get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 async function photoDelete(id){const d=await openPhotoDB();return new Promise(res=>{const t=d.transaction(PHOTO_STORE,"readwrite");t.objectStore(PHOTO_STORE).delete(id);t.oncomplete=res})}
-function compressPhoto(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const max=1800,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej()},"image/jpeg",.82)};im.onerror=rej;im.src=u})}
+function compressPhoto(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const max=1800,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));const ctx=c.getContext("2d");if(!ctx){URL.revokeObjectURL(u);rej(new Error("Canvas ni na voljo."));return}ctx.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej(new Error("Slike ni bilo mogoče obdelati."))},"image/jpeg",.82)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("Slike ni bilo mogoče odpreti."))};im.src=u})}
 async function addPhotoFiles(files){for(const f of [...files].filter(f=>f.type.startsWith("image/")).slice(0,20-pendingMaterialPhotos.length)){try{const id=uid(),blob=await compressPhoto(f);await photoPut({id,blob,created:Date.now()});pendingMaterialPhotos.push(id)}catch{}}renderPendingPhotos()}
 async function renderPendingPhotos(){const b=$("materialPhotoPreview");if(!b)return;b.innerHTML="";for(const id of pendingMaterialPhotos){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),d=document.createElement("div");d.className="photo-thumb";d.innerHTML='<img alt="Gradivo"><button type="button">×</button>';d.querySelector("img").src=u;d.querySelector("img").onload=()=>URL.revokeObjectURL(u);d.querySelector("button").onclick=async()=>{pendingMaterialPhotos=pendingMaterialPhotos.filter(x=>x!==id);if(!editingOriginalPhotos.includes(id))await photoDelete(id);renderPendingPhotos()};b.appendChild(d)}$("materialPhotoInfo").textContent=pendingMaterialPhotos.length?pendingMaterialPhotos.length+" fotografij dodanih.":"Ni dodanih fotografij."}
 async function openStoredPhoto(id){const r=await photoGet(id);if(!r)return;const u=URL.createObjectURL(r.blob);$("photoViewerImg").src=u;$("photoViewer").dataset.url=u;$("photoViewer").classList.remove("hidden")}
@@ -1018,19 +955,19 @@ function dataURLToBlob(s){const [h,b]=s.split(","),mime=(h.match(/data:([^;]+)/)
 async function exportFullBackup(){
  const ids=[...new Set(db.materials.flatMap(m=>[...(m.photos||[]),...(m.attachments||[])]))],assets=[];
  for(const id of ids){const r=await photoGet(id);if(r?.blob)assets.push({id,name:r.name||"",type:r.type||r.blob.type||"",created:r.created||0,data:await blobToDataURL(r.blob)})}
- const pack={version:8,exportedAt:new Date().toISOString(),db,assets},a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.href=u;a.download="sola-popolna-varnostna-kopija-v8.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
+ const pack={version:10,exportedAt:new Date().toISOString(),db,assets},a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.href=u;a.download="moj-organizator-varnostna-kopija-v10.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
 }
 async function importFullBackup(file){
  const pack=JSON.parse(await file.text()),x=pack.db||pack;if(!Array.isArray(x.subjects)||!Array.isArray(x.materials)||!Array.isArray(x.exams)||!Array.isArray(x.teachers))throw new Error("bad");
  x.grades??=[];x.studySettings??={defaultTime:"17:00",dailyMinutes:180,blockMinutes:45};x.dayOverrides??={};x.studySlots??=[];x.questions??=[];x.studySessions??=[];x.freeDays??=[];x.quickNotes??=[];x.mockHistory??=[];
  x.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});
  for(const a of (pack.assets||[])){if(a.data)await photoPut({id:a.id,name:a.name||"",type:a.type||"",created:a.created||Date.now(),blob:dataURLToBlob(a.data)})}
- db=x;save()
+ db=x;normalizeDb();save()
 }
 
 function subjectReadiness(id){const ms=db.materials.filter(m=>m.subject===id);if(!ms.length)return 0;return Math.round(ms.reduce((n,m)=>n+((m.mastery||0)/3)*100,0)/ms.length)}
 function renderV7Extras(){
- $("questionSubject").innerHTML=opts();$("timerSubject").innerHTML=opts("Izberi predmet");
+ setSelectOptions("questionSubject",opts());setSelectOptions("timerSubject",opts("Izberi predmet"));
  const future=[...db.exams].filter(e=>daysUntil(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""));
  $("readinessList").innerHTML=future.length?future.slice(0,6).map(e=>{const r=subjectReadiness(e.subject),c=r>=80?"green":r>=55?"yellow":"red";return `<div class="readiness-row"><div><span class="traffic ${c}"></span><b>${esc(subjectName(e.subject))}</b> · ${daysUntil(e.date)} dni ${e.time?"· "+esc(e.time):""}</div><div class="progress" style="margin-top:7px"><i style="width:${r}%"></i></div><div class="small muted">${r}% pripravljena${db.subjects.find(s=>s.id===e.subject)?.target?` · ciljna ocena ${db.subjects.find(s=>s.id===e.subject).target}`:""}</div></div>`}).join(""):'<div class="empty">Dodaj izpite in gradivo.</div>';
  const done=db.subjects.filter(s=>s.completed).length,total=db.subjects.length,pct=total?Math.round(done/total*100):0;$("schoolProgress").innerHTML=`<b>${done}/${total} predmetov opravljenih · ${pct}%</b><div class="progress" style="margin-top:8px"><i style="width:${pct}%"></i></div>`;
@@ -1055,7 +992,7 @@ let mockState=null;
 function startMockExam(){const subject=$("mockSubject").value,count=Number($("mockCount").value)||10;if(!subject){alert("Izberi predmet.");return}const pool=quizItems().filter(x=>x.subject===subject).sort(()=>Math.random()-.5).slice(0,count);if(!pool.length){alert("Za ta predmet dodaj več besedilnega gradiva.");return}mockState={subject,items:pool,index:0,score:0,answered:false};renderMock()}
 function renderMock(){const box=$("mockExam");if(!mockState){box.innerHTML="";return}if(mockState.index>=mockState.items.length){const pct=Math.round(mockState.score/mockState.items.length*100);db.mockHistory.push({id:uid(),date:localDateKey(),subject:mockState.subject,score:mockState.score,total:mockState.items.length});localStorage.setItem(KEY,JSON.stringify(db));box.innerHTML=`<div class="mock-question"><div class="mock-score">${pct}%</div><b>${mockState.score}/${mockState.items.length} pravilno</b><div class="small muted">Rezultat je shranjen.</div><button onclick="mockState=null;renderMock()" style="margin-top:8px">Zapri</button></div>`;return}const q=mockState.items[mockState.index];box.innerHTML=`<div class="mock-question"><b>Vprašanje ${mockState.index+1}/${mockState.items.length}</b><div style="white-space:pre-wrap;margin:8px 0">${esc(q.q)}</div>${q.choices.map(c=>`<button class="quiz-choice mock-choice" data-v="${esc(c)}">${esc(c)}</button>`).join("")}<div id="mockMsg" class="small muted"></div><button id="mockNext" class="primary hidden" style="margin-top:8px">Naslednje</button></div>`;document.querySelectorAll(".mock-choice").forEach(b=>b.onclick=()=>{if(mockState.answered)return;mockState.answered=true;const ok=b.dataset.v===q.answer;if(ok)mockState.score++;b.classList.add(ok?"correct":"wrong");document.querySelectorAll(".mock-choice").forEach(x=>{if(x.dataset.v===q.answer)x.classList.add("correct")});$("mockMsg").textContent=ok?"Pravilno.":"Pravilen odgovor: "+q.answer;$("mockNext").classList.remove("hidden")});$("mockNext").onclick=()=>{mockState.index++;mockState.answered=false;renderMock()}}
 function renderV8Extras(){
- $("chapterChecklistSubject").innerHTML=opts("Izberi predmet");if(!$("chapterChecklistSubject").value&&db.subjects[0])$("chapterChecklistSubject").value=db.subjects[0].id;$("mockSubject").innerHTML=opts("Izberi predmet");
+ const chapterPrev=$("chapterChecklistSubject")?.value||"";setSelectOptions("chapterChecklistSubject",opts("Izberi predmet"),chapterPrev);if(!$("chapterChecklistSubject").value&&db.subjects[0])$("chapterChecklistSubject").value=db.subjects[0].id;const mockPrev=$("mockSubject")?.value||"";setSelectOptions("mockSubject",opts("Izberi predmet"),mockPrev);
  $("inboxList").innerHTML=inboxHtml();$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value);$("studyStats").innerHTML=studyStatsHtml();$("weeklyPlannerStats").innerHTML=studyStatsHtml();$("studyStreak").textContent="🔥 "+studyStreak();
  const due=dueReviews();$("reviewDue").innerHTML=due.length?due.slice(0,8).map(m=>`<div class="review-item"><b>${esc(subjectName(m.subject))}: ${esc(m.title)}</b><div class="small muted">Ocena: ${["Ne znam","Težko","Skoraj","Znam"][m.mastery||0]}</div><button onclick="go('study');editMaterial('${m.id}')">Ponovi</button></div>`).join(""):'<div class="empty">Danes ni načrtovanih ponovitev. ✅</div>';$("loadStatus").innerHTML=workloadStatus();setTimeout(()=>{hydrateMaterialPhotos();hydrateMaterialFiles()},0)
 }
@@ -1083,7 +1020,7 @@ async function ensureNotificationPermission(){
 async function showStudyNotification(title,body){
  if(Notification.permission!=="granted"){const ok=await ensureNotificationPermission();if(!ok)return}
  const reg=await navigator.serviceWorker?.ready;
- if(reg?.showNotification)await reg.showNotification(title,{body,icon:"./icon-192.png",badge:"./icon-192.png",tag:"sola-reminder",renotify:true});
+ if(reg?.showNotification)await reg.showNotification(title,{body,tag:"sola-reminder",renotify:true,data:{url:"./"}});
  else new Notification(title,{body});
 }
 function notificationScheduleItems(){
@@ -1120,34 +1057,14 @@ function urlBase64ToUint8Array(base64String){
 }
 async function registerIphoneWebPush(){
  const status=$("webPushStatus");
- try{
-  if(!("serviceWorker" in navigator))throw new Error("Service Worker ni podprt.");
-  if(!("PushManager" in window))throw new Error("Ta brskalnik nima Push API podpore.");
-  const ok=await ensureNotificationPermission();if(!ok)throw new Error("Obvestila niso dovoljena.");
-  const reg=await navigator.serviceWorker.register("./sw.js");
-  await navigator.serviceWorker.ready;
-  let sub=await reg.pushManager.getSubscription();
-  if(!sub)sub=await reg.pushManager.subscribe({
-   userVisibleOnly:true,
-   applicationServerKey:urlBase64ToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)
-  });
-  currentPushSubscription=sub;
-  const json=JSON.stringify(sub.toJSON());
-  localStorage.setItem("solaPushSubscription",json);
-  $("pushSubscriptionBox").value=json;
-  status.innerHTML="✅ iPhone Web Push naročnina je ustvarjena.<br><span class='small muted'>Naslednji korak je pošiljatelj, ki bo to naročnino uporabil za obvestila ob pravem času.</span>";
-  return sub;
- }catch(e){
-  console.error(e);
-  status.textContent="❌ Web Push povezava ni uspela: "+e.message;
-  return null
- }
+ try{if(!("serviceWorker" in navigator))throw new Error("Service Worker ni podprt.");if(!("PushManager" in window))throw new Error("Ta brskalnik nima Push API podpore.");const ok=await ensureNotificationPermission();if(!ok)throw new Error("Obvestila niso dovoljena.");const reg=await navigator.serviceWorker.register("./sw.js");await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();const storedKey=localStorage.getItem("solaPushVapidPublicKey");if(sub&&storedKey!==WEB_PUSH_VAPID_PUBLIC_KEY){await sub.unsubscribe();sub=null}if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});currentPushSubscription=sub;const json=JSON.stringify(sub.toJSON());localStorage.setItem("solaPushSubscription",json);localStorage.setItem("solaPushVapidPublicKey",WEB_PUSH_VAPID_PUBLIC_KEY);$("pushSubscriptionBox").value=json;status.innerHTML="✅ Web Push naročnina je aktivna na tej napravi.<br><span class='small muted'>Če zamenjaš telefon ali ponovno namestiš aplikacijo, ustvari novo naročnino.</span>";return sub}catch(e){console.error("Web Push:",e);status.textContent="❌ Web Push povezava ni uspela: "+e.message;return null}
 }
-function restorePushSubscriptionView(){
- const saved=localStorage.getItem("solaPushSubscription")||"";
- $("pushSubscriptionBox").value=saved;
- $("webPushStatus").textContent=saved?"✅ Web Push naročnina je shranjena na tej napravi.":"Web Push še ni povezan.";
+function restorePushSubscriptionView(){const saved=localStorage.getItem("solaPushSubscription")||"",key=localStorage.getItem("solaPushVapidPublicKey");if($("pushSubscriptionBox"))$("pushSubscriptionBox").value=saved;if($("webPushStatus"))$("webPushStatus").textContent=saved?(key===WEB_PUSH_VAPID_PUBLIC_KEY?"✅ Web Push naročnina je shranjena na tej napravi.":"⚠️ Push naročnino je treba osvežiti. Pritisni Poveži Web Push."):"Web Push še ni povezan."}
+
+function runDiagnostics(){
+ const errors=[],warnings=[];const required=["subjectForm","materialForm","examForm","gradeForm","teacherForm","subjectList","materialList","examList","gradeList","teacherList","confirmOverlay"];required.forEach(id=>{if(!$(id))errors.push("Manjka element #"+id)});const allIds=[...document.querySelectorAll("[id]")].map(x=>x.id),dupes=allIds.filter((x,i)=>allIds.indexOf(x)!==i);if(dupes.length)errors.push("Podvojeni HTML ID-ji: "+[...new Set(dupes)].join(", "));for(const k of ["subjects","materials","exams","teachers","grades","studySlots","questions","studySessions","freeDays","quickNotes","mockHistory"])if(!Array.isArray(db[k]))errors.push("Podatkovna zbirka: "+k+" ni seznam.");const subjectIds=new Set(db.subjects.map(s=>s.id));const bad=[...db.materials,...db.exams,...db.grades,...db.questions].filter(x=>x.subject&&!subjectIds.has(x.subject));if(bad.length)errors.push("Najdene so neveljavne povezave s predmeti.");try{const k="sola_diag_"+Date.now();localStorage.setItem(k,"1");if(localStorage.getItem(k)!=="1")errors.push("LocalStorage ne vrača shranjenih podatkov.");localStorage.removeItem(k)}catch{errors.push("Lokalno shranjevanje ni dostopno.")}if(!("indexedDB" in window))warnings.push("IndexedDB ni na voljo – slike/PDF ne bodo delovali.");if(!("serviceWorker" in navigator))warnings.push("Service Worker ni na voljo v tem načinu brskalnika.");if(!("Notification" in window))warnings.push("Obvestila niso podprta v tem brskalniku.");const result=$("diagnosticsResult");if(errors.length){result.className="notification-status health-error";result.textContent="❌ Najdenih napak: "+errors.join(" | ")}else if(warnings.length){result.className="notification-status health-warn";result.textContent="✅ Jedro aplikacije je brez napak. Opomba: "+warnings.join(" ")}else{result.className="notification-status health-ok";result.textContent="✅ Preverjanje uspešno: podatki, obrazci, povezave, lokalno shranjevanje in PWA funkcije so na voljo."}return {errors,warnings}
 }
+$("runDiagnosticsBtn").onclick=()=>{const r=runDiagnostics();if(!r.errors.length)toast("Diagnostika je zaključena brez napak v jedru aplikacije.")};
 
 const TUTORIAL_KEY="solskiOrganizatorTabTutorialsV1";
 let tutorialSeen=JSON.parse(localStorage.getItem(TUTORIAL_KEY)||"{}"), tutorialSteps=[], tutorialIndex=0, highlighted=null;
@@ -1209,27 +1126,19 @@ function openGuide(){$("onboarding").classList.remove("hidden")}
 function closeGuide(){$("onboarding").classList.add("hidden");localStorage.setItem(GUIDE_KEY,"1")}
 $("guideBtn").onclick=openGuide;$("guideStart").onclick=closeGuide;$("repeatTutorials").onclick=()=>{tutorialSeen={};localStorage.setItem(TUTORIAL_KEY,"{}");alert("Vodiči so ponastavljeni. Ko odpreš posamezen zavihek, se bo tutorial znova prikazal.")};
 
-function resetSubjectForm(){const f=$("subjectForm");f.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet"}
-function resetMaterialForm(){const f=$("materialForm");f.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";$("newSubjectWrap").classList.add("hidden");$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];renderPendingPhotos();renderPendingFiles()}
-function resetExamForm(){const f=$("examForm");f.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit"}
-function resetGradeForm(){const f=$("gradeForm");f.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";$("gradeDate").value=localDateKey()}
-function resetTeacherForm(){const f=$("teacherForm");f.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja"}
-function addCancelButton(saveId,fn){
- const saveBtn=$(saveId);if(!saveBtn||document.getElementById(saveId+"Cancel"))return;
- const b=document.createElement("button");b.type="button";b.id=saveId+"Cancel";b.className="form-cancel";b.textContent="Prekliči urejanje";b.onclick=()=>{fn();toast("Urejanje je preklicano.")};
- saveBtn.insertAdjacentElement("afterend",b);
-}
-addCancelButton("subjectSaveBtn",resetSubjectForm);
-addCancelButton("materialSaveBtn",resetMaterialForm);
-addCancelButton("examSaveBtn",resetExamForm);
-addCancelButton("gradeSaveBtn",resetGradeForm);
-addCancelButton("teacherSaveBtn",resetTeacherForm);
+function setEditMode(saveId,editing){const b=$(saveId+"Cancel");if(b)b.classList.toggle("hidden-edit",!editing)}
+function resetSubjectForm(){const f=$("subjectForm");f.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";setEditMode("subjectSaveBtn",false)}
+async function resetMaterialForm(){const uncommitted=[...pendingMaterialPhotos.filter(x=>!editingOriginalPhotos.includes(x)),...pendingMaterialFiles.filter(x=>!editingOriginalFiles.includes(x))];for(const id of uncommitted){try{await photoDelete(id)}catch{}}const f=$("materialForm");f.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];await renderPendingPhotos();await renderPendingFiles();setEditMode("materialSaveBtn",false)}
+function resetExamForm(){const f=$("examForm");f.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit";setEditMode("examSaveBtn",false)}
+function resetGradeForm(){const f=$("gradeForm");f.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";$("gradeDate").value=localDateKey();setEditMode("gradeSaveBtn",false)}
+function resetTeacherForm(){const f=$("teacherForm");f.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";setEditMode("teacherSaveBtn",false)}
+function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||document.getElementById(saveId+"Cancel"))return;const b=document.createElement("button");b.type="button";b.id=saveId+"Cancel";b.className="form-cancel hidden-edit";b.textContent="Prekliči urejanje";b.onclick=async()=>{await fn();toast("Urejanje je preklicano.")};saveBtn.insertAdjacentElement("afterend",b)}
+addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
-render();
-if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();
-if(!localStorage.getItem(GUIDE_KEY))openGuide();
-setInterval(maybeForegroundReminder,30000);
+async function initializeApplication(){
+ try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
+}
+initializeApplication();
 
 </script>
 </body>

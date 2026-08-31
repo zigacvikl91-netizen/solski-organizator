@@ -1,7 +1,7 @@
 {
-  "name": "Moj šolski organizator V8",
-  "short_name": "Šola",
-  "description": "Osebni organizator za samostojno učenje in izpite.",
+  "name": "Moj Organizator",
+  "short_name": "Organizator",
+  "description": "Osebni organizator za samostojno učenje, gradivo, izpite in ocene.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
