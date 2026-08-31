@@ -321,7 +321,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
   <div class="guide-step"><div class="guide-num">6</div><div><b>Če danes ne gre</b><div class="small muted">Izberi <b>Danes manj</b>, če imaš manj časa, ali <b>Danes ne morem</b>, če se ta dan sploh ne moreš učiti. Snov ostane za prihodnje dni.</div></div></div>
   <div class="guide-step"><div class="guide-num">7</div><div><b>Označi, kako dobro znaš</b><div class="small muted">Po učenju pri snovi izberi <b>Ne znam / Težko / Skoraj / Znam</b>. Težje teme se bodo pogosteje pojavile za ponavljanje.</div></div></div>
   <div class="guide-step"><div class="guide-num">8</div><div><b>Po izpitu vpiši oceno</b><div class="small muted">V <b>Ocene</b> dodaj predmet, oceno, datum in opombo. Aplikacija ti izračuna povprečje za vsak predmet.</div></div></div>
-  <div class="guide-step"><div class="guide-num">9</div><div><b>Naredi varnostno kopijo</b><div class="small muted">Občasno pritisni <b>Varnostna kopija</b>. V10 v kopijo vključi tudi fotografije in PDF datoteke.</div></div></div>
+  <div class="guide-step"><div class="guide-num">9</div><div><b>Naredi varnostno kopijo</b><div class="small muted">Občasno pritisni <b>Varnostna kopija</b>. V11 v kopijo vključi tudi fotografije in PDF datoteke.</div></div></div>
 
   <div class="notice small"><b>Obvestila:</b> aplikacija lahko opozori ob izbrani uri, ko je odprta. Za zanesljiva opozorila tudi takrat, ko je zaprta in uporabljaš TikTok ali drugo aplikacijo, bo potreben še brezplačen Web Push del, ki ga lahko dodamo naknadno.</div>
   <div class="guide-actions"><button id="guideStart" class="primary">Razumem – začni</button></div>
@@ -449,9 +449,10 @@ button:disabled{opacity:.55;cursor:not-allowed}
  <div class="card"><h3>🌴 Prosti dnevi</h3><div class="row"><input id="freeDayDate" type="date"><button id="addFreeDay">Dodaj prost dan</button></div><div id="freeDayList"></div></div>
  <div class="card">
   <h3>Opozorila za učenje</h3>
-  <div class="small muted">Na iPhonu lahko Home Screen spletna aplikacija prejema prava Web Push obvestila tudi, ko ni odprta. Najprej jo dodaj na začetni zaslon in nato dovoli obvestila. Za samodejno pošiljanje ob nastavljenih urah je potreben še brezplačen push strežnik.</div>
+  <div class="small muted">Samodejni opomniki se sinhronizirajo s Cloudflare strežnikom. Ko je Web Push povezan, lahko obvestilo pride tudi, ko je aplikacija zaprta, uporabljaš drugo aplikacijo ali je iPhone zaklenjen.</div>
   <div id="notificationStatus" class="notice small"></div>
-  <button id="notificationBtn" style="margin-top:10px">Omogoči obvestila</button>
+  <div id="cloudReminderStatus" class="notice small" style="margin-top:8px">Cloud opomniki še niso preverjeni.</div>
+  <div class="toolbar" style="margin-top:10px"><button id="notificationBtn">Omogoči obvestila</button><button id="checkPushServerBtn">☁️ Preveri strežnik</button></div>
  </div>
 </section>
 
@@ -582,7 +583,7 @@ let toastTimer=null;
 function toast(msg){const el=$("appToast");if(!el)return;el.textContent=msg;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2200)}
 function persist(){normalizeDb();try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(err){console.error("Shranjevanje ni uspelo:",err);toast("Shranjevanje ni uspelo. Preveri prostor v brskalniku.");return false}}
 function safeRenderPart(name,fn){try{fn()}catch(err){console.error("Napaka pri prikazu "+name+":",err)}}
-const save=()=>{persist();render()};
+const save=()=>{persist();render();queueCloudReminderSync()};
 function askConfirm(title,text,okLabel="Izbriši"){
  return new Promise(resolve=>{const ov=$("confirmOverlay"),ok=$("confirmOk"),cancel=$("confirmCancel");if(!ov||!ok||!cancel){resolve(window.confirm(text));return}$("confirmTitle").textContent=title;$("confirmText").textContent=text;ok.textContent=okLabel;ov.classList.remove("hidden");ov.setAttribute("aria-hidden","false");const key=e=>{if(e.key==="Escape")done(false)};const done=v=>{ov.classList.add("hidden");ov.setAttribute("aria-hidden","true");ok.onclick=null;cancel.onclick=null;ov.onclick=null;document.removeEventListener("keydown",key);resolve(v)};ok.onclick=()=>done(true);cancel.onclick=()=>done(false);ov.onclick=e=>{if(e.target===ov)done(false)};document.addEventListener("keydown",key)})
 }
@@ -814,9 +815,66 @@ $("timerStop").onclick=()=>{if(timerRunning){timerElapsed+=Date.now()-timerStart
 
 
 
-const WEB_PUSH_VAPID_PUBLIC_KEY="BEepwVHwxSvzaejT7WgTt5x0Wzs9qdSSofaI0SAu_eRrmACD3BMEPOKh0GzmyO9yzldiHYwNdrggz9cC1898I9g";
+
+const PUSH_SERVER_URL="https://solski-organizator-push.ziga-cvikl91.workers.dev";
+const CLOUD_SYNC_IDS_KEY="solaCloudReminderIdsV1";
+let cloudSyncTimer=null;
+
+function reminderTimestamp(date,time){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||""))||!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time||"")))return NaN;
+  return new Date(`${date}T${time}:00`).getTime();
+}
+function cloudReminderItems(){
+  const now=Date.now()-60000;
+  return db.studySlots.filter(s=>!s.done&&s.date&&s.time).map(s=>({
+    id:String(s.id),deviceId:"primary",title:"📚 Čas za učenje",
+    body:`${s.title||subjectName(s.subject)||"Učenje"} · ${s.minutes||45} min`,
+    scheduledAt:reminderTimestamp(s.date,s.time)
+  })).filter(x=>Number.isFinite(x.scheduledAt)&&x.scheduledAt>=now).sort((a,b)=>a.scheduledAt-b.scheduledAt).slice(0,100);
+}
+async function cloudRequest(path,options={}){
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    const res=await fetch(PUSH_SERVER_URL+path,{...options,signal:controller.signal,headers:{"Content-Type":"application/json",...(options.headers||{})}});
+    const text=await res.text();let data={};try{data=text?JSON.parse(text):{}}catch{data={raw:text}}
+    if(!res.ok)throw new Error(data.error||`HTTP ${res.status}`);return data;
+  }finally{clearTimeout(timeout)}
+}
+async function checkPushServer(showToast=false){
+  const el=$("cloudReminderStatus");
+  try{
+    const data=await cloudRequest("/health");
+    if(el){el.className="notice small health-ok";el.textContent=`✅ Cloud opomniki so povezani. V strežniku: ${data.reminders??0} opomnikov.`}
+    if(showToast)toast("Cloudflare push strežnik deluje.");return true;
+  }catch(err){
+    console.error("Push server health:",err);
+    if(el){el.className="notice small health-error";el.textContent="❌ Cloud opomniki niso dosegljivi: "+err.message}
+    if(showToast)toast("Strežnik trenutno ni dosegljiv.");return false;
+  }
+}
+async function syncCloudReminders(){
+  const status=$("cloudReminderStatus");
+  try{
+    const current=cloudReminderItems(),currentIds=new Set(current.map(x=>x.id));
+    let oldIds=[];try{oldIds=JSON.parse(localStorage.getItem(CLOUD_SYNC_IDS_KEY)||"[]")}catch{oldIds=[]}
+    oldIds=Array.isArray(oldIds)?oldIds.map(String):[];
+    for(const id of oldIds)if(!currentIds.has(id))try{await cloudRequest("/reminder/"+encodeURIComponent(id),{method:"DELETE"})}catch(err){console.warn("Cloud delete",id,err)}
+    for(const item of current)await cloudRequest("/reminder",{method:"POST",body:JSON.stringify(item)});
+    localStorage.setItem(CLOUD_SYNC_IDS_KEY,JSON.stringify([...currentIds]));
+    if(status){status.className="notice small health-ok";status.textContent=`✅ Samodejni opomniki sinhronizirani: ${current.length}.`}
+    return true;
+  }catch(err){
+    console.error("Cloud reminder sync:",err);
+    if(status){status.className="notice small health-error";status.textContent="❌ Sinhronizacija opomnikov ni uspela: "+err.message}
+    return false;
+  }
+}
+function queueCloudReminderSync(){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncCloudReminders(),700)}
+
+const WEB_PUSH_VAPID_PUBLIC_KEY="BG7RgYYEt3JbAOW-7T4ElIGtOGfyu5CvmgmK4qF0IbZ53JkE98c2-ZKDFAwkXzcUsJdCOsloXz0p-sNKts-Qgtk";
 let currentPushSubscription=null;
 
+$("checkPushServerBtn").onclick=()=>checkPushServer(true);
 $("connectWebPush").onclick=registerIphoneWebPush;
 $("copyPushSubscription").onclick=async()=>{const t=$("pushSubscriptionBox").value;if(!t){alert("Najprej poveži Web Push.");return}try{await navigator.clipboard.writeText(t);alert("Push naročnina je kopirana.")}catch{prompt("Kopiraj push naročnino:",t)}};
 $("enableNotifications").onclick=ensureNotificationPermission;
@@ -1057,7 +1115,7 @@ function urlBase64ToUint8Array(base64String){
 }
 async function registerIphoneWebPush(){
  const status=$("webPushStatus");
- try{if(!("serviceWorker" in navigator))throw new Error("Service Worker ni podprt.");if(!("PushManager" in window))throw new Error("Ta brskalnik nima Push API podpore.");const ok=await ensureNotificationPermission();if(!ok)throw new Error("Obvestila niso dovoljena.");const reg=await navigator.serviceWorker.register("./sw.js");await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();const storedKey=localStorage.getItem("solaPushVapidPublicKey");if(sub&&storedKey!==WEB_PUSH_VAPID_PUBLIC_KEY){await sub.unsubscribe();sub=null}if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});currentPushSubscription=sub;const json=JSON.stringify(sub.toJSON());localStorage.setItem("solaPushSubscription",json);localStorage.setItem("solaPushVapidPublicKey",WEB_PUSH_VAPID_PUBLIC_KEY);$("pushSubscriptionBox").value=json;status.innerHTML="✅ Web Push naročnina je aktivna na tej napravi.<br><span class='small muted'>Če zamenjaš telefon ali ponovno namestiš aplikacijo, ustvari novo naročnino.</span>";return sub}catch(e){console.error("Web Push:",e);status.textContent="❌ Web Push povezava ni uspela: "+e.message;return null}
+ try{if(!("serviceWorker" in navigator))throw new Error("Service Worker ni podprt.");if(!("PushManager" in window))throw new Error("Ta brskalnik nima Push API podpore.");const ok=await ensureNotificationPermission();if(!ok)throw new Error("Obvestila niso dovoljena.");const reg=await navigator.serviceWorker.register("./sw.js");await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();const storedKey=localStorage.getItem("solaPushVapidPublicKey");if(sub&&storedKey!==WEB_PUSH_VAPID_PUBLIC_KEY){await sub.unsubscribe();sub=null}if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});currentPushSubscription=sub;const json=JSON.stringify(sub.toJSON());localStorage.setItem("solaPushSubscription",json);localStorage.setItem("solaPushVapidPublicKey",WEB_PUSH_VAPID_PUBLIC_KEY);$("pushSubscriptionBox").value=json;status.innerHTML="✅ Web Push naročnina je aktivna na tej napravi.<br><span class='small muted'>Če zamenjaš telefon ali ponovno namestiš aplikacijo, ustvari novo naročnino.</span>";await syncCloudReminders();return sub}catch(e){console.error("Web Push:",e);status.textContent="❌ Web Push povezava ni uspela: "+e.message;return null}
 }
 function restorePushSubscriptionView(){const saved=localStorage.getItem("solaPushSubscription")||"",key=localStorage.getItem("solaPushVapidPublicKey");if($("pushSubscriptionBox"))$("pushSubscriptionBox").value=saved;if($("webPushStatus"))$("webPushStatus").textContent=saved?(key===WEB_PUSH_VAPID_PUBLIC_KEY?"✅ Web Push naročnina je shranjena na tej napravi.":"⚠️ Push naročnino je treba osvežiti. Pritisni Poveži Web Push."):"Web Push še ni povezan."}
 
@@ -1136,7 +1194,8 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 async function initializeApplication(){
- try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
+ try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();
+  checkPushServer(false);queueCloudReminderSync();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
 }
 initializeApplication();
 
