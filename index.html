@@ -262,6 +262,26 @@ body.dark .calendar-detail-item .exam-note{background:#302b1e!important;color:#f
 body.dark .teacher-actions a{background:#22324b;color:#bcd4ff;border-color:#39465d}
 body.dark .notification-card,body.dark .notification-status,body.dark .notification-item{background:#1b1e28!important;color:#f4f5fb!important;border-color:#34394a!important}
 
+
+/* V9 – robustno brisanje, obvestila in obrazci */
+.app-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);z-index:5000;
+background:#111827;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.24);
+font-weight:700;max-width:min(88vw,520px);opacity:0;pointer-events:none;transition:.2s}
+.app-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.confirm-overlay{position:fixed;inset:0;z-index:6000;background:rgba(15,23,42,.48);display:flex;align-items:center;
+justify-content:center;padding:20px;backdrop-filter:blur(5px)}
+.confirm-overlay.hidden{display:none}
+.confirm-box{width:min(100%,460px);background:#fff;border:1px solid var(--border);border-radius:24px;padding:20px;
+box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.confirm-box h3{margin:0 0 8px}.confirm-box p{margin:0 0 16px;color:var(--muted);white-space:pre-line}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.confirm-actions button{width:100%}
+.confirm-actions .danger-confirm{background:#dc3545;color:white;border-color:#dc3545}
+.form-cancel{margin-left:8px}
+body.dark .confirm-box{background:#1b1e28;color:#f5f7fb}
+button.danger{cursor:pointer}
+.data-repair-note{font-size:12px;color:var(--muted);margin-top:6px}
+
 </style>
 </head>
 <body>
@@ -486,6 +506,19 @@ body.dark .notification-card,body.dark .notification-status,body.dark .notificat
 </section>
 </main>
 
+
+<div id="appToast" class="app-toast" role="status" aria-live="polite"></div>
+<div id="confirmOverlay" class="confirm-overlay hidden" aria-hidden="true">
+  <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">Potrdi brisanje</h3>
+    <p id="confirmText">Ali želiš nadaljevati?</p>
+    <div class="confirm-actions">
+      <button type="button" id="confirmCancel">Prekliči</button>
+      <button type="button" id="confirmOk" class="danger-confirm">Izbriši</button>
+    </div>
+  </div>
+</div>
+
 <nav class="nav"><div class="nav-inner">
 <button class="active" data-tab="home"><span>⌂</span>Domov</button>
 <button data-tab="subjects"><span>▤</span>Predmeti</button>
@@ -497,13 +530,58 @@ body.dark .notification-card,body.dark .notification-status,body.dark .notificat
 </div></nav>
 <script>
 const KEY="solskiOrganizatorV3";
-let db=JSON.parse(localStorage.getItem(KEY)||'{"subjects":[],"materials":[],"exams":[],"teachers":[],"grades":[],"studySettings":{},"dayOverrides":{},"studySlots":[],"questions":[],"studySessions":[],"freeDays":[],"quickNotes":[]}');
-db.subjects??=[];db.materials??=[];db.materials.forEach(m=>m.photos??=[]);db.exams??=[];db.teachers??=[];db.grades??=[];
-db.studySettings??={};db.studySettings.defaultTime??="17:00";db.studySettings.dailyMinutes??=180;db.studySettings.blockMinutes??=45;
-db.dayOverrides??={};db.studySlots??=[];db.questions??=[];db.studySessions??=[];db.freeDays??=[];db.quickNotes??=[];db.mockHistory??=[];db.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});db.notificationSettings??={enabled:false};
+const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
+function loadDbSafe(){
+  const raw=localStorage.getItem(KEY);
+  if(!raw)return structuredClone(EMPTY_DB);
+  try{return JSON.parse(raw)}
+  catch(err){
+    console.error("Poškodovani lokalni podatki:",err);
+    localStorage.setItem(KEY+"_corrupt_"+Date.now(),raw);
+    return structuredClone(EMPTY_DB);
+  }
+}
+let db=loadDbSafe();
+function normalizeDb(){
+  for(const k of ["subjects","materials","exams","teachers","grades","studySlots","questions","studySessions","freeDays","quickNotes","mockHistory"])if(!Array.isArray(db[k]))db[k]=[];
+  db.studySettings=(db.studySettings&&typeof db.studySettings==="object")?db.studySettings:{};
+  db.studySettings.defaultTime??="17:00";db.studySettings.dailyMinutes??=180;db.studySettings.blockMinutes??=45;
+  db.dayOverrides=(db.dayOverrides&&typeof db.dayOverrides==="object")?db.dayOverrides:{};
+  db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};
+  db.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":((m.mastery||0)>0?"learning":"received"));m.nextReview??=null});
+  const subjectIds=new Set(db.subjects.map(s=>s.id));
+  db.materials=db.materials.filter(m=>subjectIds.has(m.subject));
+  db.exams=db.exams.filter(e=>subjectIds.has(e.subject));
+  db.grades=db.grades.filter(g=>subjectIds.has(g.subject));
+  db.studySlots=db.studySlots.filter(s=>!s.subject||subjectIds.has(s.subject));
+  db.questions=db.questions.filter(q=>subjectIds.has(q.subject));
+  db.teachers.forEach(t=>{if(t.subject&&!subjectIds.has(t.subject))t.subject=""});
+}
+normalizeDb();
 let flashIndex=0, flashAnswer=false, quizIndex=0, quizAnswered=false;
 const $=id=>document.getElementById(id);
-const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));render()};
+let toastTimer=null;
+function toast(msg){
+  const el=$("appToast");if(!el)return;
+  el.textContent=msg;el.classList.add("show");clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
+}
+function persist(){
+  normalizeDb();
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+const save=()=>{persist();try{render()}catch(err){console.error("Napaka pri izrisu:",err);toast("Podatki so shranjeni, prikaz pa je naletel na napako.")}};
+function askConfirm(title,text,okLabel="Izbriši"){
+  return new Promise(resolve=>{
+    const ov=$("confirmOverlay"),ok=$("confirmOk"),cancel=$("confirmCancel");
+    $("confirmTitle").textContent=title;$("confirmText").textContent=text;ok.textContent=okLabel;
+    ov.classList.remove("hidden");ov.setAttribute("aria-hidden","false");
+    const done=v=>{ov.classList.add("hidden");ov.setAttribute("aria-hidden","true");ok.onclick=null;cancel.onclick=null;ov.onclick=null;resolve(v)};
+    ok.onclick=()=>done(true);cancel.onclick=()=>done(false);
+    ov.onclick=e=>{if(e.target===ov)done(false)};
+  });
+}
+
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function go(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));scrollTo(0,0);if(typeof startTabTutorial==="function")startTabTutorial(id)}
@@ -676,7 +754,22 @@ $("toggleNewSubject").onclick=()=>{
     $("materialNewSubject").value="";
   }
 };
-$("subjectForm").onsubmit=e=>{e.preventDefault();const id=$("subjectId").value;const name=$("subjectName").value.trim(),desc=$("subjectDesc").value.trim();if(!name)return;if(id){const s=db.subjects.find(x=>x.id===id);s.name=name;s.desc=desc;s.target=$("subjectTarget").value}else if(!db.subjects.some(s=>s.name.toLowerCase()===name.toLowerCase()))db.subjects.push({id:uid(),name,desc,target:$("subjectTarget").value,completed:false});e.target.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";save()};
+$("subjectForm").onsubmit=e=>{
+ e.preventDefault();
+ const id=$("subjectId").value,name=$("subjectName").value.trim(),desc=$("subjectDesc").value.trim();
+ if(!name){toast("Vpiši ime predmeta.");return}
+ const duplicate=db.subjects.find(s=>s.name.trim().toLowerCase()===name.toLowerCase()&&s.id!==id);
+ if(duplicate){toast("Predmet s tem imenom že obstaja.");return}
+ if(id){
+   const s=db.subjects.find(x=>x.id===id);if(!s)return;
+   s.name=name;s.desc=desc;s.target=$("subjectTarget").value;
+   toast("Predmet je posodobljen.");
+ }else{
+   db.subjects.push({id:uid(),name,desc,target:$("subjectTarget").value,completed:false});
+   toast("Predmet je dodan.");
+ }
+ e.target.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";save();
+};
 $("materialForm").onsubmit=e=>{
   e.preventDefault();
   let id=$("materialId").value;
@@ -750,11 +843,11 @@ $("examForm").onsubmit=e=>{e.preventDefault();let id=$("examId").value;if(!$("ex
 
 $("materialCamera").onchange=e=>{addPhotoFiles(e.target.files);e.target.value=""};$("materialGallery").onchange=e=>{addPhotoFiles(e.target.files);e.target.value=""};$("photoViewerClose").onclick=closePhotoViewer;$("photoViewer").onclick=e=>{if(e.target===$("photoViewer"))closePhotoViewer()};
 $("questionForm").onsubmit=e=>{e.preventDefault();const text=$("questionText").value.trim(),subject=$("questionSubject").value;if(!text||!subject)return;db.questions.push({id:uid(),subject,text,created:Date.now()});e.target.reset();save()};
-window.removeQuestion=id=>{db.questions=db.questions.filter(q=>q.id!==id);save()};
+window.removeQuestion=async id=>{const q=db.questions.find(x=>x.id===id);if(!q)return;if(!await askConfirm("Izbrišem vprašanje?",q.text))return;db.questions=db.questions.filter(x=>x.id!==id);save();toast("Vprašanje je izbrisano.");};
 $("quickNoteBtn").onclick=()=>{const text=$("quickNoteInput").value.trim();if(!text)return;db.quickNotes.push({id:uid(),text,created:Date.now()});$("quickNoteInput").value="";save()};
-window.removeQuickNote=id=>{db.quickNotes=db.quickNotes.filter(n=>n.id!==id);save()};
+window.removeQuickNote=async id=>{const n=db.quickNotes.find(x=>x.id===id);if(!n)return;if(!await askConfirm("Izbrišem zapisek?",n.text))return;db.quickNotes=db.quickNotes.filter(x=>x.id!==id);save();toast("Zapisek je izbrisan.");};
 $("addFreeDay").onclick=()=>{const d=$("freeDayDate").value;if(!d)return;if(!db.freeDays.includes(d))db.freeDays.push(d);db.dayOverrides[d]={skip:true};save()};
-window.removeFreeDay=d=>{db.freeDays=db.freeDays.filter(x=>x!==d);delete db.dayOverrides[d];save()};
+window.removeFreeDay=async d=>{if(!await askConfirm("Odstranim prosti dan?",d,"Odstrani"))return;db.freeDays=db.freeDays.filter(x=>x!==d);delete db.dayOverrides[d];save();toast("Prosti dan je odstranjen.");};
 window.toggleSubjectComplete=id=>{const s=db.subjects.find(x=>x.id===id);if(s){s.completed=!s.completed;save()}};
 $("extraStudyBtn").onclick=()=>{const sub=prompt("Vpiši ime predmeta za dodatno učenje ali pusti prazno za priporočilo:","");let subject=db.subjects.find(s=>s.name.toLowerCase()===(sub||"").toLowerCase())?.id; if(!subject){const cand=[...db.subjects].sort((a,b)=>subjectReadiness(a.id)-subjectReadiness(b.id))[0];subject=cand?.id||""}const mins=Number(prompt("Koliko dodatnih minut?","45"))||45;const time=prompt("Ob kateri uri?","20:00")||"20:00";db.studySlots.push({id:uid(),date:localDateKey(),time,minutes:mins,subject,title:"Dodatno učenje",done:false,extra:true});save()};
 $("breakBtn").onclick=()=>{const t=prompt("Ob kateri uri želiš nadaljevati?","20:30");if(t)alert("Nadaljevanje je nastavljeno za "+t+". Dodaj učni blok z gumbom »Uči se še naprej« in izberi isto uro.")};
@@ -839,21 +932,55 @@ $("gradeForm").onsubmit=e=>{
  e.target.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";save();
 };
 window.toggleStudySlot=id=>{const s=db.studySlots.find(x=>x.id===id);if(s){s.done=!s.done;save()}};
-window.removeStudySlot=id=>{db.studySlots=db.studySlots.filter(x=>x.id!==id);save()};
+window.removeStudySlot=async id=>{const s=db.studySlots.find(x=>x.id===id);if(!s)return;if(!await askConfirm("Odstranim učni blok?",`${s.time||""} · ${s.title||subjectName(s.subject)}`))return;db.studySlots=db.studySlots.filter(x=>x.id!==id);save();toast("Učni blok je odstranjen.");};
 window.rescheduleSlot=id=>{const s=db.studySlots.find(x=>x.id===id);if(!s)return;const t=prompt("Izberi točno novo uro (npr. 20:30)",s.time);if(!t)return;if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t)){alert("Vpiši uro v obliki HH:MM.");return}s.time=t;s.notifiedAt=null;save()};
-window.removeGrade=id=>{db.grades=db.grades.filter(g=>g.id!==id);save()};
+window.removeGrade=async id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;if(!await askConfirm("Izbrišem oceno?",`${subjectName(g.subject)} · ocena ${g.value}`))return;db.grades=db.grades.filter(x=>x.id!==id);save();toast("Ocena je izbrisana.");};
 window.editGrade=id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;go("grades");$("gradeId").value=g.id;$("gradeSubject").value=g.subject;$("gradeValue").value=String(g.value);$("gradeDate").value=g.date||"";$("gradeType").value=g.type||"Pisno";$("gradeNote").value=g.note||"";$("gradeSaveBtn").textContent="Shrani spremembe"};
 
 $("teacherForm").onsubmit=e=>{e.preventDefault();const id=$("teacherId").value;const obj={id:id||uid(),name:$("teacherName").value.trim(),subject:$("teacherSubject").value,email:$("teacherEmail").value.trim(),phone:$("teacherPhone").value.trim(),note:$("teacherNote").value.trim()};if(!obj.name)return;if(id)db.teachers[db.teachers.findIndex(x=>x.id===id)]=obj;else db.teachers.push(obj);e.target.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";save()};
 $("search").oninput=renderMaterials;$("flipCard").onclick=()=>{flashAnswer=!flashAnswer;renderFlash()};$("nextCard").onclick=()=>{flashAnswer=false;flashIndex++;renderFlash()};$("nextQuiz").onclick=()=>{quizAnswered=false;quizIndex++;renderQuiz()};
 window.setMastery=(id,v)=>{let m=db.materials.find(x=>x.id===id);if(m){m.mastery=v;m.status=v===3?"done":"learning";m.done=v===3;m.nextReview=v===3?null:addDaysKey(localDateKey(),reviewInterval(v));save()}};
 window.toggleDone=id=>{let m=db.materials.find(x=>x.id===id);if(m){m.done=!m.done;if(m.done&&m.mastery<2)m.mastery=2;m.status=m.done?"done":"learning";m.nextReview=m.done?null:addDaysKey(localDateKey(),reviewInterval(m.mastery||1));save()}};
-window.removeMaterial=async id=>{const m=db.materials.find(x=>x.id===id);for(const pid of [...(m?.photos||[]),...(m?.attachments||[])])await photoDelete(pid);db.materials=db.materials.filter(x=>x.id!==id);save()};window.removeExam=id=>{db.exams=db.exams.filter(x=>x.id!==id);save()};window.removeTeacher=id=>{db.teachers=db.teachers.filter(x=>x.id!==id);save()};
+window.removeMaterial=async id=>{
+ const m=db.materials.find(x=>x.id===id);if(!m)return;
+ if(!await askConfirm("Izbrišem gradivo?",`»${m.title}« bo trajno odstranjeno skupaj s pripetimi fotografijami in PDF datotekami.`))return;
+ for(const pid of [...(m.photos||[]),...(m.attachments||[])]){try{await photoDelete(pid)}catch(e){console.warn(e)}}
+ db.materials=db.materials.filter(x=>x.id!==id);
+ db.studySlots=db.studySlots.filter(x=>x.id!==id&&x.materialId!==id);
+ save();toast("Gradivo je izbrisano.");
+};
+window.removeExam=async id=>{
+ const e=db.exams.find(x=>x.id===id);if(!e)return;
+ if(!await askConfirm("Izbrišem izpit?",`${subjectName(e.subject)} · ${e.date}${e.time?" ob "+e.time:""}`))return;
+ db.exams=db.exams.filter(x=>x.id!==id);save();toast("Izpit je izbrisan.");
+};
+window.removeTeacher=async id=>{
+ const t=db.teachers.find(x=>x.id===id);if(!t)return;
+ if(!await askConfirm("Izbrišem učitelja?",t.name))return;
+ db.teachers=db.teachers.filter(x=>x.id!==id);save();toast("Učitelj je izbrisan.");
+};
 window.editSubject=id=>{const s=db.subjects.find(x=>x.id===id);if(!s)return;go("subjects");$("subjectId").value=s.id;$("subjectName").value=s.name;$("subjectDesc").value=s.desc||"";$("subjectTarget").value=s.target||"";$("subjectSaveBtn").textContent="Shrani spremembe"};
 window.editMaterial=id=>{const m=db.materials.find(x=>x.id===id);if(!m)return;go("study");$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";$("materialId").value=m.id;$("materialSubject").value=m.subject;$("materialChapter").value=m.chapter||"";$("materialSubchapter").value=m.subchapter||"";$("materialTitle").value=m.title;$("materialText").value=m.text;$("materialPriority").value=m.priority;$("materialMinutes").value=String(m.minutes||45);pendingMaterialPhotos=[...(m.photos||[])];editingOriginalPhotos=[...(m.photos||[])];pendingMaterialFiles=[...(m.attachments||[])];editingOriginalFiles=[...(m.attachments||[])];renderPendingPhotos();renderPendingFiles();$("materialSaveBtn").textContent="Shrani spremembe"};
 window.editExam=id=>{const e=db.exams.find(x=>x.id===id);if(!e)return;go("calendar");$("examId").value=e.id;$("examSubject").value=e.subject;$("examDate").value=e.date;$("examTime").value=e.time||"";$("examAttempt").value=e.attempt||"1";$("examNote").value=e.note||"";$("examSaveBtn").textContent="Shrani spremembe"};
 window.editTeacher=id=>{const t=db.teachers.find(x=>x.id===id);if(!t)return;go("teachers");$("teacherId").value=t.id;$("teacherName").value=t.name;$("teacherSubject").value=t.subject;$("teacherEmail").value=t.email;$("teacherPhone").value=t.phone;$("teacherNote").value=t.note;$("teacherSaveBtn").textContent="Shrani spremembe"};
-window.removeSubject=id=>{if(confirm("Izbrišem predmet in njegovo snov ter izpite?")){db.subjects=db.subjects.filter(x=>x.id!==id);db.materials=db.materials.filter(x=>x.subject!==id);db.exams=db.exams.filter(x=>x.subject!==id);db.grades=db.grades.filter(x=>x.subject!==id);db.studySlots=db.studySlots.filter(x=>x.subject!==id);db.teachers.forEach(t=>{if(t.subject===id)t.subject=""});save()}};
+window.removeSubject=async id=>{
+ const s=db.subjects.find(x=>x.id===id);if(!s)return;
+ const mats=db.materials.filter(m=>m.subject===id);
+ const exams=db.exams.filter(e=>e.subject===id).length,grades=db.grades.filter(g=>g.subject===id).length;
+ const ok=await askConfirm("Izbrišem predmet?",`»${s.name}«\n\nIzbrisano bo tudi: ${mats.length} gradiv, ${exams} izpitov in ${grades} ocen. Učitelji ostanejo shranjeni, le povezava s predmetom se odstrani.`);
+ if(!ok)return;
+ for(const m of mats)for(const asset of [...(m.photos||[]),...(m.attachments||[])]){try{await photoDelete(asset)}catch(e){console.warn(e)}}
+ db.subjects=db.subjects.filter(x=>x.id!==id);
+ db.materials=db.materials.filter(x=>x.subject!==id);
+ db.exams=db.exams.filter(x=>x.subject!==id);
+ db.grades=db.grades.filter(x=>x.subject!==id);
+ db.studySlots=db.studySlots.filter(x=>x.subject!==id);
+ db.questions=db.questions.filter(x=>x.subject!==id);
+ db.studySessions=db.studySessions.filter(x=>x.subject!==id);
+ db.mockHistory=db.mockHistory.filter(x=>x.subject!==id);
+ db.teachers.forEach(t=>{if(t.subject===id)t.subject=""});
+ save();toast("Predmet in povezani podatki so izbrisani.");
+};
 $("exportBtn").onclick=exportFullBackup;
 $("importFile").onchange=async e=>{try{await importFullBackup(e.target.files[0]);alert("Podatki, slike in PDF so obnovljeni.")}catch{alert("Datoteka ni veljavna varnostna kopija.")}};
 
@@ -1081,6 +1208,23 @@ const GUIDE_KEY="solskiOrganizatorGuideV1";
 function openGuide(){$("onboarding").classList.remove("hidden")}
 function closeGuide(){$("onboarding").classList.add("hidden");localStorage.setItem(GUIDE_KEY,"1")}
 $("guideBtn").onclick=openGuide;$("guideStart").onclick=closeGuide;$("repeatTutorials").onclick=()=>{tutorialSeen={};localStorage.setItem(TUTORIAL_KEY,"{}");alert("Vodiči so ponastavljeni. Ko odpreš posamezen zavihek, se bo tutorial znova prikazal.")};
+
+function resetSubjectForm(){const f=$("subjectForm");f.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet"}
+function resetMaterialForm(){const f=$("materialForm");f.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";$("newSubjectWrap").classList.add("hidden");$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];renderPendingPhotos();renderPendingFiles()}
+function resetExamForm(){const f=$("examForm");f.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit"}
+function resetGradeForm(){const f=$("gradeForm");f.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";$("gradeDate").value=localDateKey()}
+function resetTeacherForm(){const f=$("teacherForm");f.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja"}
+function addCancelButton(saveId,fn){
+ const saveBtn=$(saveId);if(!saveBtn||document.getElementById(saveId+"Cancel"))return;
+ const b=document.createElement("button");b.type="button";b.id=saveId+"Cancel";b.className="form-cancel";b.textContent="Prekliči urejanje";b.onclick=()=>{fn();toast("Urejanje je preklicano.")};
+ saveBtn.insertAdjacentElement("afterend",b);
+}
+addCancelButton("subjectSaveBtn",resetSubjectForm);
+addCancelButton("materialSaveBtn",resetMaterialForm);
+addCancelButton("examSaveBtn",resetExamForm);
+addCancelButton("gradeSaveBtn",resetGradeForm);
+addCancelButton("teacherSaveBtn",resetTeacherForm);
+
 if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
 render();
 if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();
