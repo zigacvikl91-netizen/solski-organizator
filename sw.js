@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v12-6-layout-fixed";
+const CACHE="moj-organizator-v12-7-layout-polished";
 const CORE=["./","./index.html","./manifest.json"];
 self.addEventListener("install",event=>{
   self.skipWaiting();

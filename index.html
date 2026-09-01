@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Moj Organizator">
-<link rel="manifest" href="manifest.json?v=12.6">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.6">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.6">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.6">
+<link rel="manifest" href="manifest.json?v=12.7">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.7">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.7">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.7">
 <title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
@@ -653,6 +653,117 @@ body.dark .tutorial-actions{background:#171b27!important}
 @media(max-width:520px){
   .quick-add-card .quick-add-grid{grid-template-columns:1fr 1fr!important}
   .quick-add-card .quick-add-grid button{min-height:56px!important}
+}
+
+
+/* V12.7 – postavitev Danes / Koledar / Ocene + iOS form controls */
+/* Po tutorialu se stran ne sme več ustaviti na sredini obrazca. */
+#planner,#calendar,#grades{scroll-margin-top:0}
+
+/* Enotna, kompaktna polja na iOS. */
+#planner input,#planner select,#planner textarea,
+#calendar input,#calendar select,#calendar textarea,
+#grades input,#grades select,#grades textarea{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  min-height:52px!important;
+  height:52px;
+  padding:10px 14px!important;
+  border-radius:14px!important;
+  font-size:16px!important;
+  line-height:1.2!important;
+  display:block!important;
+}
+#planner input[type="time"],#planner input[type="date"],
+#calendar input[type="time"],#calendar input[type="date"],
+#grades input[type="time"],#grades input[type="date"]{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  text-align:left!important;
+}
+#planner label,#calendar label,#grades label{
+  display:block;
+  margin:0 0 12px!important;
+  font-size:14px;
+  line-height:1.25;
+}
+#planner label>input,#planner label>select,
+#calendar label>input,#calendar label>select,
+#grades label>input,#grades label>select{margin-top:6px!important}
+
+/* Kartice naj bodo bolj uravnotežene in manj raztegnjene. */
+#planner>.card,#calendar>.card,#grades>.card{
+  padding:16px!important;
+  margin:12px 0!important;
+  border-radius:20px!important;
+}
+#planner>.card h3,#calendar>.card h3,#grades>.card h3{
+  font-size:20px;
+  line-height:1.2;
+  margin-bottom:8px;
+}
+#planner form button.primary,#calendar form button.primary,#grades form button.primary{
+  width:100%;
+  min-height:50px;
+  margin-top:2px;
+}
+
+/* Današnje učenje: settings compact. */
+#planner #studySettingsForm .grid{gap:10px}
+#planner #studySettingsForm>label{margin-bottom:12px!important}
+#planner #studySettingsForm button.primary{margin-top:2px}
+#planner .help-chip,#grades .help-chip{margin-bottom:10px}
+#planner #plannerList .empty{padding:18px 10px}
+
+/* Koledar: obrazec za izpit naj deluje kot en sam urejen blok. */
+#calendar #examForm .grid{gap:10px}
+#calendar #examForm label:last-of-type{margin-bottom:12px!important}
+#calendar .calendar-main-card{overflow:hidden}
+#calendar .calendar-day-details{margin-top:12px;padding-top:12px}
+
+/* Ocene: kompakten obrazec in povzetek. */
+#grades #gradeForm .grid{gap:10px}
+#grades #gradeSummary .empty,#grades #gradeList .empty{padding:18px 10px}
+
+@media(max-width:520px){
+  /* Naslovi naj bodo takoj pod statusno vrstico, ne na sredini zaslona. */
+  #planner,#calendar,#grades{padding-top:0!important;margin-top:0!important}
+  #planner>h1,#calendar>h1,#grades>h1{margin:0 0 8px!important;font-size:27px!important;line-height:1.1}
+
+  /* Date/time pari ostanejo lepo drug ob drugem. */
+  #calendar #examForm .grid,
+  #grades #gradeForm .grid{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:10px!important;
+  }
+  #calendar #examForm .grid label,
+  #grades #gradeForm .grid label{min-width:0!important}
+
+  /* Planner: dve nastavitvi pod prvo uro za krajši obrazec. */
+  #planner #studySettingsForm .grid{
+    grid-template-columns:1fr!important;
+  }
+  #planner>.card,#calendar>.card,#grades>.card{padding:16px!important}
+  #planner .hero{gap:10px}
+  #planner .hero button{width:100%!important}
+
+  /* Bottom nav naj nikoli ne prekrije zadnjega gumba. */
+  #planner,#calendar,#grades{padding-bottom:20px}
+}
+
+@media(max-width:370px){
+  #calendar #examForm .grid,
+  #grades #gradeForm .grid{grid-template-columns:1fr!important}
+}
+
+/* Dark mode mora ohraniti isti kontrast tudi na teh obrazcih. */
+body.dark #planner input,body.dark #planner select,
+body.dark #calendar input,body.dark #calendar select,
+body.dark #grades input,body.dark #grades select{
+  background:#171b24!important;
+  color:#f4f5fb!important;
+  border-color:#3a4050!important;
 }
 
 </style>
@@ -1569,16 +1680,18 @@ function showTutorialStep(){
  $("tutorialIcon").textContent=s.icon||"💡";$("tutorialTitle").textContent=s.title;$("tutorialText").textContent=s.text;
  $("tutorialStepLabel").textContent=`Korak ${tutorialIndex+1} od ${tutorialSteps.length}`;
  $("tutorialNext").textContent=tutorialIndex===tutorialSteps.length-1?"Končaj":"Naprej";
- if(s.target){highlighted=document.querySelector(s.target);if(highlighted){highlighted.classList.add("tutorial-highlight");setTimeout(()=>highlighted?.scrollIntoView({behavior:"smooth",block:"center"}),120)}}
+ if(s.target){highlighted=document.querySelector(s.target);if(highlighted){highlighted.classList.add("tutorial-highlight");setTimeout(()=>{const r=highlighted?.getBoundingClientRect();if(r&&(r.top<110||r.bottom>window.innerHeight-150))highlighted.scrollIntoView({behavior:"smooth",block:"nearest"})},120)}}
  $("tutorialPop").classList.remove("hidden");
 }
 function startTabTutorial(tab,force=false){
  if(!tutorials[tab]||(!force&&tutorialSeen[tab]))return;
+ tutorialReturnY=window.scrollY||0;
  tutorialSteps=tutorials[tab];tutorialIndex=0;setTimeout(showTutorialStep,180);
 }
 function closeTabTutorial(){
  clearTutorialHighlight();document.body.classList.remove("tutorial-open");$("tutorialPop").classList.add("hidden");
  const tab=document.querySelector(".view.active")?.id;if(tab){tutorialSeen[tab]=true;localStorage.setItem(TUTORIAL_KEY,JSON.stringify(tutorialSeen))}
+ requestAnimationFrame(()=>window.scrollTo({top:tutorialReturnY,left:0,behavior:"instant"}));
 }
 $("tutorialClose").onclick=closeTabTutorial;
 $("tutorialNext").onclick=()=>{tutorialIndex++;showTutorialStep()};
