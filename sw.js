@@ -1,5 +1,5 @@
-const CACHE="moj-organizator-v12-1-ui-fixes";
-const CORE=["./","./index.html","./manifest.json"];
+const CACHE="moj-organizator-v12-3-complete-fix";
+const CORE=["./","./index.html","./manifest.json","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon-180.png"];
 self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)))});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",event=>{if(event.request.method!=="GET")return;if(event.request.mode==="navigate"){event.respondWith(fetch(event.request).then(r=>{if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put("./index.html",c)).catch(()=>{})}return r}).catch(()=>caches.match("./index.html")));return}event.respondWith(fetch(event.request).then(r=>{if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put(event.request,c)).catch(()=>{})}return r}).catch(()=>caches.match(event.request)))});

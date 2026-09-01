@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Moj Organizator">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
@@ -54,11 +57,12 @@ body{background:linear-gradient(180deg,#f5f7ff 0,#fbfcff 42%,#f7f9ff 100%)}
 .subject-card:nth-child(4n+1){border-left:5px solid #5b8def}.subject-card:nth-child(4n+2){border-left:5px solid #8b5cf6}.subject-card:nth-child(4n+3){border-left:5px solid #2da56d}.subject-card:nth-child(4n){border-left:5px solid #e59a24}
 button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2))}
 .nav button.active{background:linear-gradient(180deg,#efedff,#e9efff);color:#4c4ed1}
-.tutorial-pop{position:fixed;z-index:120;left:12px;right:12px;bottom:92px;margin:auto;width:min(620px,calc(100% - 24px));background:white;border:2px solid #cbc9ff;border-radius:22px;padding:16px;box-shadow:0 18px 55px rgba(35,40,80,.22)}
-.tutorial-pop .tut-icon{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#e7eaff,#f5eaff);display:grid;place-items:center;font-size:22px}
-.tutorial-pop h3{color:#3436a8}.tutorial-actions{display:flex;gap:8px;margin-top:12px}.tutorial-actions button{flex:1}
-.tutorial-highlight{outline:3px solid #7c6ff0!important;outline-offset:3px;position:relative;z-index:119}
-.help-chip{display:inline-flex;align-items:center;gap:5px;background:#efedff;color:#4d4fb5;border-radius:99px;padding:6px 9px;font-size:12px;font-weight:700;margin-bottom:8px}
+.tutorial-pop{position:fixed;z-index:120;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom));margin:auto;width:min(620px,calc(100% - 24px));max-height:min(56vh,440px);display:flex;flex-direction:column;background:white;border:2px solid #cbc9ff;border-radius:24px;padding:16px 16px 14px;box-shadow:0 18px 55px rgba(35,40,80,.22);overflow:hidden}
+.tutorial-header{display:flex;align-items:center;gap:10px;min-width:0}
+.tutorial-pop .tut-icon{width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:linear-gradient(135deg,#e7eaff,#f5eaff);display:grid;place-items:center;font-size:22px}
+.tutorial-pop h3{color:#3436a8;margin:0}.tutorial-body{margin-top:10px;line-height:1.5;overflow:auto;padding-right:2px}.tutorial-actions{display:flex;gap:8px;margin-top:14px;padding-top:12px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.94) 28%,#fff 55%)}.tutorial-actions button{flex:1}
+.tutorial-highlight{outline:3px solid #7c6ff0!important;outline-offset:3px;position:relative;z-index:119;border-radius:14px}
+.help-chip{display:inline-flex;align-items:center;gap:5px;background:#efedff;color:#4d4fb5;border-radius:99px;padding:6px 9px;font-size:12px;font-weight:700;margin:0 0 10px}
 
 
 /* V7 full-app colour system */
@@ -291,54 +295,63 @@ button.danger{cursor:pointer}
 body.dark .health-ok,body.dark .health-warn,body.dark .health-error{background:#20242f!important;color:#f4f5fb!important}
 button:disabled{opacity:.55;cursor:not-allowed}
 
-/* V12 – uvodna 3D knjiga */
+/* V12.2 – privlačnejša uvodna knjiga */
 .book-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:hidden;
- background:radial-gradient(circle at 50% 40%,#fff8fb 0,#f2e7ff 42%,#d8cbff 100%);transition:opacity .55s ease,visibility .55s ease}
+ background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.9),rgba(246,236,255,.95) 28%,#eadfff 65%,#dfd0ff 100%);transition:opacity .6s ease,visibility .6s ease}
 .book-intro.finished{opacity:0;visibility:hidden;pointer-events:none}
-.book-intro::before,.book-intro::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);opacity:.5}
+.book-intro::before,.book-intro::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
 .book-intro::before{width:42vmax;height:42vmax;left:-24vmax;top:-20vmax;background:#ffd8ea}
 .book-intro::after{width:38vmax;height:38vmax;right:-22vmax;bottom:-22vmax;background:#cdbbff}
-.intro-title{position:absolute;top:max(7vh,calc(env(safe-area-inset-top) + 26px));left:20px;right:20px;text-align:center;
- color:#59457f;font-size:clamp(20px,5.4vw,29px);font-weight:850;letter-spacing:-.4px;opacity:0;animation:introTitle 5.5s ease forwards}
-.book-stage{position:relative;width:min(86vw,430px);height:min(67vw,335px);perspective:1200px;z-index:1;transform:translateY(22px)}
-.book-shadow{position:absolute;left:12%;right:12%;bottom:5%;height:13%;border-radius:50%;background:rgba(72,46,112,.24);filter:blur(14px);animation:shadowPulse 5.5s ease forwards}
-.book3d{position:absolute;left:50%;top:52%;width:76%;height:60%;transform:translate(-50%,-50%) rotateX(58deg) rotateZ(-4deg);transform-style:preserve-3d;
+.intro-copy{position:absolute;top:max(7vh,calc(env(safe-area-inset-top) + 22px));left:20px;right:20px;text-align:center;z-index:3}
+.intro-title{color:#59457f;font-size:clamp(22px,5.8vw,32px);font-weight:850;letter-spacing:-.4px;opacity:0;animation:introTitle 5.5s ease forwards}
+.intro-subtitle{margin-top:10px;color:#7b6b9d;font-size:clamp(13px,3.5vw,17px);font-weight:650;opacity:0;animation:introSubtitle 5.5s ease forwards}
+.book-stage{position:relative;width:min(92vw,480px);height:min(74vw,360px);perspective:1380px;z-index:1;transform:translateY(10px)}
+.book-shadow{position:absolute;left:10%;right:10%;bottom:4%;height:14%;border-radius:50%;background:rgba(72,46,112,.24);filter:blur(16px);animation:shadowPulse 5.5s ease forwards}
+.book3d{position:absolute;left:50%;top:54%;width:82%;height:64%;transform:translate(-50%,-50%) rotateX(58deg) rotateZ(-4deg);transform-style:preserve-3d;
  animation:bookLift 5.5s cubic-bezier(.22,.75,.25,1) forwards}
 .book-back,.book-front{position:absolute;inset:0;border-radius:11px 18px 18px 11px;background:linear-gradient(135deg,#7253bf,#a879df 58%,#5b3f9e);
- box-shadow:inset 0 0 0 3px rgba(255,255,255,.17),0 8px 18px rgba(68,38,111,.3);transform-origin:left center;transform-style:preserve-3d}
+ box-shadow:0 20px 42px rgba(64,39,101,.24)}
 .book-back{transform:translateZ(-9px)}
 .book-front{z-index:8;background:linear-gradient(135deg,#a36fd3,#d89fdc 48%,#7253bf);animation:coverOpen 5.5s cubic-bezier(.35,.05,.22,1) forwards}
 .book-front::before{content:"MOJ ORGANIZATOR";position:absolute;inset:20% 12%;display:grid;place-items:center;text-align:center;border:2px solid rgba(255,235,190,.65);
- color:#fff4cf;font-size:clamp(10px,2.6vw,15px);font-weight:900;letter-spacing:1.5px;border-radius:10px;text-shadow:0 1px 2px #594078}
+ border-radius:14px;color:#fff7de;font-weight:900;font-size:clamp(14px,2.7vw,18px);letter-spacing:1.6px;text-shadow:0 2px 8px rgba(70,34,95,.35)}
 .book-page{position:absolute;inset:5px 7px 5px 5px;border-radius:7px 15px 15px 7px;background:linear-gradient(90deg,#f2dfbd,#fffdf3 12%,#fffaf0 88%,#ead5ae);
- transform-origin:left center;transform-style:preserve-3d;box-shadow:inset -3px 0 4px rgba(100,70,35,.08);overflow:hidden;color:#685d62;padding:16px 18px 12px 28px;
- font-family:"Bradley Hand","Segoe Print",cursive;font-size:clamp(7px,1.9vw,11px);line-height:1.42}
+ box-shadow:inset 0 0 0 1px rgba(165,144,110,.12)}
+.page1{z-index:7;animation:pageFlip1 5.5s ease forwards}.page2{z-index:6;animation:pageFlip2 5.5s ease forwards}.page3{z-index:5;animation:pageFlip3 5.5s ease forwards}
 .book-page::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:#efb7b7}
 .book-page::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0,transparent 17px,rgba(133,164,198,.22) 18px);pointer-events:none}
 .book-page>*{position:relative;z-index:1}.book-page b{color:#6650a0}.book-page .formula{font-family:"Times New Roman",serif;font-size:1.12em;color:#405789}
-.page1{z-index:7;animation:pageFlip1 5.5s ease forwards}.page2{z-index:6;animation:pageFlip2 5.5s ease forwards}.page3{z-index:5;animation:pageFlip3 5.5s ease forwards}
 .page4{z-index:4;animation:pageFlip4 5.5s ease forwards}.page5{z-index:3}.book-ribbon{position:absolute;z-index:9;right:14%;bottom:-12%;width:9%;height:35%;background:linear-gradient(#e8a3b3,#b85e83);border-radius:0 0 3px 3px;transform:translateZ(3px)}
 .book-ribbon::after{content:"";position:absolute;left:0;right:0;bottom:-1px;margin:auto;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:11px solid #f6eaff}
-.intro-skip{position:absolute;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));z-index:2;border:1px solid rgba(91,63,140,.2);background:rgba(255,255,255,.52);color:#5c497c;
- backdrop-filter:blur(8px);min-height:40px;padding:8px 15px;font-size:13px}
-@keyframes coverOpen{0%,17%{transform:rotateY(0)}38%,100%{transform:rotateY(-176deg)}}
-@keyframes pageFlip1{0%,38%{transform:rotateY(0)}52%,100%{transform:rotateY(-174deg)}}
-@keyframes pageFlip2{0%,49%{transform:rotateY(0)}63%,100%{transform:rotateY(-171deg)}}
-@keyframes pageFlip3{0%,60%{transform:rotateY(0)}74%,100%{transform:rotateY(-168deg)}}
-@keyframes pageFlip4{0%,71%{transform:rotateY(0)}85%,100%{transform:rotateY(-165deg)}}
-@keyframes bookLift{0%{transform:translate(-50%,-42%) rotateX(69deg) rotateZ(-4deg) scale(.82)}18%{transform:translate(-50%,-55%) rotateX(61deg) rotateZ(-4deg) scale(1)}38%,86%{transform:translate(-50%,-50%) rotateX(53deg) rotateZ(-2deg) scale(1.03)}100%{transform:translate(-50%,-50%) rotateX(49deg) rotateZ(0) scale(1.06)}}
-@keyframes shadowPulse{0%{transform:scale(.7);opacity:.08}24%,90%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:.6}}
+.study-chip{position:absolute;z-index:2;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.76);border:1px solid rgba(113,90,163,.13);color:#5f4b8c;font-weight:800;font-size:13px;backdrop-filter:blur(8px);box-shadow:0 12px 26px rgba(65,52,98,.12);opacity:0;animation:chipFloat 5.5s ease forwards}
+.study-chip.left{left:max(16px,6vw);top:46%}.study-chip.right{right:max(16px,6vw);top:34%;animation-delay:.2s}.study-chip.bottom{right:max(28px,11vw);bottom:18%;animation-delay:.35s}
+.intro-skip{position:absolute;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));z-index:2;border:1px solid rgba(91,63,140,.2);background:rgba(255,255,255,.58);color:#5c497c;
+ padding:12px 20px;border-radius:16px;font-weight:800;box-shadow:0 8px 30px rgba(78,53,120,.1)}
+@keyframes coverOpen{0%,13%{transform:translateZ(9px) rotateY(0deg)}58%{transform:translateZ(9px) rotateY(-152deg)}76%{transform:translateZ(9px) rotateY(-132deg)}100%{transform:translateZ(9px) rotateY(-146deg)}}
+@keyframes pageFlip1{0%,18%{transform:translateZ(7px) rotateY(0deg)}48%{transform:translateZ(7px) rotateY(-158deg)}100%{transform:translateZ(7px) rotateY(-157deg)}}
+@keyframes pageFlip2{0%,25%{transform:translateZ(5px) rotateY(0deg)}53%{transform:translateZ(5px) rotateY(-150deg)}100%{transform:translateZ(5px) rotateY(-149deg)}}
+@keyframes pageFlip3{0%,31%{transform:translateZ(3px) rotateY(0deg)}58%{transform:translateZ(3px) rotateY(-138deg)}100%{transform:translateZ(3px) rotateY(-136deg)}}
+@keyframes pageFlip4{0%,37%{transform:translateZ(1px) rotateY(0deg)}62%{transform:translateZ(1px) rotateY(-124deg)}100%{transform:translateZ(1px) rotateY(-121deg)}}
+@keyframes shadowPulse{0%{transform:scale(.66);opacity:0}20%{opacity:.14}50%{transform:scale(1);opacity:.21}100%{transform:scale(1.08);opacity:.23}}
+@keyframes bookLift{0%{transform:translate(-50%,-43%) rotateX(69deg) rotateZ(-4deg) scale(.8)}20%{transform:translate(-50%,-56%) rotateX(61deg) rotateZ(-3deg) scale(1)}46%,82%{transform:translate(-50%,-50%) rotateX(53deg) rotateZ(-1deg) scale(1.05)}100%{transform:translate(-50%,-49%) rotateX(49deg) rotateZ(0) scale(1.08)}}
 @keyframes introTitle{0%,8%{opacity:0;transform:translateY(-8px)}18%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-5px)}}
+@keyframes introSubtitle{0%,14%{opacity:0;transform:translateY(10px)}24%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(6px)}}
+@keyframes chipFloat{0%,18%{opacity:0;transform:translateY(14px) scale(.92)}30%,82%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-4px) scale(.98)}}
+@media(max-width:520px){.book-stage{transform:translateY(24px)}.study-chip{font-size:12px;padding:8px 11px}.study-chip.left{top:49%}.study-chip.right{top:36%}.study-chip.bottom{bottom:22%}}
 @media(prefers-reduced-motion:reduce){.book3d,.book-front,.book-page,.book-shadow,.intro-title{animation-duration:.01ms!important;animation-delay:0s!important}.book-intro{transition-duration:.01ms}}
 
 
-/* V12.1 – iPhone safe-area + temni način + UI popravki */
+/* V12.2 – iPhone safe-area + temni način + UI popravki */
 html,body{min-height:100%;min-height:100dvh}
-body{padding-top:env(safe-area-inset-top)}
+body{padding-top:max(env(safe-area-inset-top),10px)}
 main{
-  padding-top:max(18px,calc(env(safe-area-inset-top) + 10px));
+  padding-top:max(26px,calc(env(safe-area-inset-top) + 18px));
   padding-bottom:calc(112px + env(safe-area-inset-bottom));
 }
+@media (display-mode: standalone){
+  main{padding-top:max(38px,calc(env(safe-area-inset-top) + 30px))}
+}
+.view>h1:first-child{margin-top:0}
 .nav{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
 
 body.dark .schedule-slot{
@@ -373,13 +386,17 @@ body.dark .health-error{
   border-color:#8f5059!important;
 }
 
-.quick-add-card .hero{align-items:flex-start}
-.quick-add-card .row{
+.quick-add-card{background:linear-gradient(135deg,#121727,#171d31)!important}
+.quick-add-card h3,.quick-add-card .muted{color:#f2f4ff}
+.quick-add-card .hero{align-items:flex-start;gap:10px}
+.quick-add-card .quick-add-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
+  margin-top:10px;
 }
-.quick-add-card .row button{width:100%;min-width:0}
+.quick-add-card .quick-add-grid button{width:100%;min-width:0;min-height:58px;font-size:17px;font-weight:800}
+.quick-add-card .quick-add-reset{align-self:flex-start;white-space:nowrap}
 
 .import-wrap{
   border:1px solid var(--border);
@@ -419,16 +436,154 @@ body.dark .import-wrap input[type=file]::file-selector-button{
     gap:10px;
   }
   .toolbar>*{width:100%;min-width:0!important}
-  .quick-add-card .hero{display:block}
-  .quick-add-card .hero>button{width:100%;margin-top:10px}
+  .tutorial-pop{left:10px;right:10px;top:calc(env(safe-area-inset-top) + 72px);bottom:calc(90px + env(safe-area-inset-bottom));max-height:none}
+  .tutorial-actions{position:sticky;bottom:0}
+  .quick-add-card .hero{display:flex;flex-direction:column;align-items:stretch}
+  .quick-add-card .quick-add-reset{width:100%}
+  .quick-add-card .quick-add-grid{grid-template-columns:1fr 1fr}
 }
 
-</style>
+
+
+/* V12.3 – popoln UI polish + temni tutoriali + boljši intro + ikone */
+:root{--ring:rgba(123,111,240,.22)}
+html{scroll-padding-top:120px}
+body{padding-top:0}
+main{padding-top:max(32px,calc(env(safe-area-inset-top) + 24px));padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+.view{padding-top:4px}
+.view>h1,.view>.hero h1{letter-spacing:-.02em}
+@media (display-mode: standalone){
+  main{padding-top:max(78px,calc(env(safe-area-inset-top) + 56px))}
+}
+@media(max-width:520px){
+  main{padding-top:max(28px,calc(env(safe-area-inset-top) + 22px))}
+}
+@media (max-width:520px) and (display-mode: standalone){
+  main{padding-top:max(86px,calc(env(safe-area-inset-top) + 62px))}
+}
+button,input,select,textarea{transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease,color .18s ease}
+button:active{transform:translateY(1px)}
+button:focus-visible,input:focus,select:focus,textarea:focus{outline:none;border-color:#7c6ff0;box-shadow:0 0 0 4px var(--ring)}
+body.dark button:focus-visible,body.dark input:focus,body.dark select:focus,body.dark textarea:focus{box-shadow:0 0 0 4px rgba(124,111,240,.2)}
+
+/* Tutorial / guide readability */
+body.tutorial-open::after{content:"";position:fixed;inset:0;z-index:118;background:rgba(7,12,22,.45);backdrop-filter:blur(2px)}
+.tutorial-pop{z-index:120;border-width:1.5px;box-shadow:0 26px 70px rgba(23,29,54,.28)}
+.tutorial-body{font-size:15px;line-height:1.58;color:#46506a;padding-right:4px}
+.tutorial-pop h3{font-size:22px;line-height:1.15}
+.tutorial-actions{gap:10px}
+.tutorial-actions button{min-height:50px;font-weight:800}
+.onboarding{backdrop-filter:blur(5px)}
+.onboarding-box{box-shadow:0 30px 80px rgba(22,28,50,.28)}
+.onboarding-box h1{line-height:1.08;letter-spacing:-.02em}
+.help-chip{box-shadow:0 8px 24px rgba(91,92,226,.12)}
+body.dark .onboarding{background:rgba(8,12,20,.76)}
+body.dark .onboarding-box,
+body.dark .tutorial-pop{
+  background:#171b27!important;
+  color:#f4f5fb!important;
+  border-color:#343d57!important;
+  box-shadow:0 28px 80px rgba(0,0,0,.46)!important;
+}
+body.dark .onboarding-box h1,
+body.dark .onboarding-box h2,
+body.dark .tutorial-pop h3{color:#eef1ff!important}
+body.dark .tutorial-pop .small,
+body.dark .tutorial-pop .muted,
+body.dark .tutorial-body,
+body.dark .onboarding-box .muted,
+body.dark .onboarding-box .small,
+body.dark .guide-step .muted,
+body.dark .file-note{color:#c7cede!important}
+body.dark .tutorial-pop .tut-icon{background:linear-gradient(135deg,#28324e,#394570);color:#f4f5fb}
+body.dark .tutorial-actions{background:linear-gradient(180deg,rgba(23,27,39,0),rgba(23,27,39,.95) 28%,#171b27 55%)}
+body.dark .guide-step{border-color:#30374b}
+body.dark .guide-num{background:#2a3150;color:#eef2ff}
+body.dark .help-chip{background:#232a41;color:#d8deff;border:1px solid #3a4461}
+body.dark .tutorial-highlight{outline-color:#9c90ff!important}
+body.dark .tutorial-pop button:not(.primary),
+body.dark .onboarding-box button:not(.primary){background:#232a3d!important;color:#f4f5fb!important;border-color:#39435e!important}
+
+/* Quick add card polish */
+.quick-add-card{border-color:#2b3250!important;box-shadow:0 18px 45px rgba(11,16,32,.24)!important;background:linear-gradient(135deg,#111625,#171e33)!important}
+.quick-add-card .hero{gap:14px}
+.quick-add-card h3{font-size:clamp(28px,5.4vw,36px);letter-spacing:-.03em;margin-bottom:2px}
+.quick-add-card .quick-add-reset{background:rgba(255,255,255,.08)!important;color:#f7f8ff!important;border:1px solid rgba(255,255,255,.12)!important}
+.quick-add-card .quick-add-grid button{background:rgba(255,255,255,.07)!important;color:#f7f8ff!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:16px;box-shadow:none}
+.quick-add-card .quick-add-grid button:hover{background:rgba(255,255,255,.12)!important}
+.quick-add-card .quick-add-grid button span{display:block}
+@media(max-width:520px){
+  .quick-add-card h3{font-size:24px}
+  .quick-add-card .quick-add-grid button{min-height:60px;font-size:16px}
+}
+
+/* Better top spacing for first action rows */
+#home>.hero{margin-bottom:4px}
+#home .row{align-items:stretch}
+#subjects>h1,#study>h1,#planner>h1,#calendar>h1,#grades>h1,#teachers>h1{margin-bottom:6px}
+
+/* Import styling */
+.import-wrap{display:flex;align-items:center;min-height:72px}
+.import-wrap input[type=file]{width:100%}
+
+/* More attractive book intro */
+.book-intro{background:radial-gradient(circle at 50% 34%,rgba(255,255,255,.96),rgba(247,238,255,.96) 26%,#eadfff 59%,#d6c1ff 100%)}
+.book-intro::before{opacity:.72;animation:orbDriftLeft 8s ease-in-out infinite alternate}
+.book-intro::after{opacity:.62;animation:orbDriftRight 8.5s ease-in-out infinite alternate}
+.intro-copy{top:max(6vh,calc(env(safe-area-inset-top) + 26px))}
+.intro-title{font-size:clamp(24px,6.1vw,35px);text-shadow:0 10px 28px rgba(105,79,145,.18)}
+.intro-subtitle{max-width:440px;margin-inline:auto;line-height:1.45}
+.book-stage{width:min(96vw,560px);height:min(54vh,410px);min-height:320px;transform:translateY(0)}
+.book-stage::before,.book-stage::after{content:"✦";position:absolute;z-index:2;color:rgba(255,255,255,.98);text-shadow:0 0 16px rgba(255,255,255,.7),0 0 28px rgba(125,92,214,.3);animation:sparkle 2.9s ease-in-out infinite}
+.book-stage::before{left:13%;top:22%;font-size:22px}
+.book-stage::after{right:16%;top:14%;font-size:16px;animation-delay:1.15s}
+.book-shadow{left:16%;right:16%;bottom:7%;height:13%;filter:blur(22px)}
+.book3d{top:50%;width:84%;height:60%;animation:bookLift 5.5s cubic-bezier(.22,.75,.25,1) forwards}
+.book-front::after{content:"";position:absolute;inset:0;border-radius:11px 18px 18px 11px;background:linear-gradient(120deg,transparent 0,rgba(255,255,255,.05) 28%,rgba(255,255,255,.26) 42%,transparent 52%);mix-blend-mode:screen;animation:coverShine 5.5s ease forwards}
+.book-page{font-size:14px;line-height:1.45;padding:20px 14px 12px 28px}
+.study-chip{background:rgba(255,255,255,.82);font-size:13px;padding:10px 15px;box-shadow:0 16px 30px rgba(65,52,98,.14)}
+.study-chip.left{top:56%}
+.study-chip.right{top:30%}
+.study-chip.bottom{left:50%;right:auto;transform:translateX(-50%);bottom:10%}
+.intro-skip{backdrop-filter:blur(8px);background:rgba(255,255,255,.72)}
+@keyframes orbDriftLeft{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(26px,18px,0) scale(1.08)}}
+@keyframes orbDriftRight{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-26px,-14px,0) scale(1.06)}}
+@keyframes sparkle{0%,100%{opacity:.35;transform:scale(.78) rotate(0deg)}50%{opacity:1;transform:scale(1.18) rotate(10deg)}}
+@keyframes coverShine{0%,30%{opacity:0;transform:translateX(-32%)}55%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(16%)}}
+@media(max-width:520px){
+  .intro-copy{top:max(44px,calc(env(safe-area-inset-top) + 16px));left:16px;right:16px}
+  .intro-title{max-width:330px;margin-inline:auto}
+  .intro-subtitle{max-width:300px;font-size:14px}
+  .book-stage{height:47vh;min-height:335px}
+  .book3d{width:92%;height:58%;top:48%}
+  .book-page{font-size:12px;padding:16px 10px 10px 24px}
+  .study-chip.left{left:16px;top:59%}
+  .study-chip.right{right:16px;top:31%}
+  .study-chip.bottom{bottom:13%}
+}
+
+/* Dark mode for intro */
+body.dark .book-intro{background:radial-gradient(circle at 50% 34%,#1f2540 0,#181d31 28%,#121624 62%,#0c0f18 100%)}
+body.dark .intro-title{color:#f3ecff}
+body.dark .intro-subtitle{color:#d0c7ef}
+body.dark .study-chip{background:rgba(22,26,40,.78);color:#f3f5ff;border-color:rgba(255,255,255,.08)}
+body.dark .intro-skip{background:rgba(22,26,40,.82);color:#f3f5ff;border-color:rgba(255,255,255,.1)}
+
+/* Small extra polish */
+.notification-item,.notification-status,.schedule-slot,.calendar-detail-item{box-shadow:0 6px 20px rgba(21,28,44,.04)}
+.file-note{line-height:1.45}
+
 </head>
 <body>
 
 <div id="bookIntro" class="book-intro" aria-label="Uvodna animacija šolske knjige">
- <div class="intro-title">Odpri znanje. Dosezi cilj. ✨</div>
+ <div class="intro-copy">
+  <div class="intro-title">Odpri znanje. Dosezi cilj. ✨</div>
+  <div class="intro-subtitle">Vsak blok učenja te pripelje bližje izpitu.</div>
+ </div>
+ <div class="study-chip left">📚 Zapiski na enem mestu</div>
+ <div class="study-chip right">🎯 Jasni cilji učenja</div>
+ <div class="study-chip bottom">⏱️ Kratki učni bloki</div>
  <div class="book-stage" aria-hidden="true">
   <div class="book-shadow"></div>
   <div class="book3d">
@@ -449,11 +604,11 @@ body.dark .import-wrap input[type=file]::file-selector-button{
 
 <div id="photoViewer" class="photo-viewer hidden"><button id="photoViewerClose" class="photo-viewer-close">×</button><img id="photoViewerImg" alt="Fotografija gradiva"></div>
 <div id="tutorialPop" class="tutorial-pop hidden" role="dialog" aria-live="polite">
- <div class="row" style="align-items:center;flex-wrap:nowrap">
+ <div class="tutorial-header">
   <div class="tut-icon" id="tutorialIcon">💡</div>
   <div><div class="small muted" id="tutorialStepLabel">Navodila</div><h3 id="tutorialTitle">Kako uporabljaš ta zavihek</h3></div>
  </div>
- <div id="tutorialText" style="margin-top:9px;line-height:1.45"></div>
+ <div id="tutorialText" class="tutorial-body"></div>
  <div class="tutorial-actions"><button id="tutorialClose">Razumem</button><button id="tutorialNext" class="primary">Naprej</button></div>
 </div>
 
@@ -512,7 +667,7 @@ body.dark .import-wrap input[type=file]::file-selector-button{
  <div id="notificationScheduleList" class="notification-list"></div>
  </div>
  <div class="card"><h3>⚙️ Videz, zasebnost in diagnostika</h3><div class="toolbar"><button id="darkModeBtn">🌙 Temni način</button><button id="pinBtn">🔐 Nastavi PIN</button><button id="lockNowBtn">Zakleni zdaj</button><button id="runDiagnosticsBtn">🩺 Preveri aplikacijo</button></div><div class="file-note">PIN je lokalna zaščita aplikacije na tej napravi.</div><div id="diagnosticsResult" class="notification-status" style="margin-top:10px">Diagnostika še ni bila zagnana.</div></div>
- <div class="card quick-add-card"><div class="hero"><h3>Hitro dodaj</h3><button id="repeatTutorials">Ponovi vodiče</button></div><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
+ <div class="card quick-add-card"><div class="hero"><div><h3>Hitro dodaj</h3><div class="muted small">Najpogostejša dejanja na enem mestu.</div></div><button id="repeatTutorials" class="quick-add-reset">Ponovi vodiče</button></div><div class="quick-add-grid"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
  <div class="card"><h3>Obnovi podatke</h3><div class="import-wrap"><input id="importFile" type="file" accept="application/json"></div><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
 </section>
 
@@ -1038,7 +1193,7 @@ if($("materialPdf"))$("materialPdf").onchange=e=>{addPdfFiles(e.target.files);e.
 if($("chapterChecklistSubject"))$("chapterChecklistSubject").onchange=()=>{$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value)};
 if($("startMock"))$("startMock").onclick=startMockExam;
 if($("globalSearch"))$("globalSearch").oninput=()=>{const hits=globalSearchHits($("globalSearch").value);$("globalSearchResults").innerHTML=hits.map(h=>`<div class="search-hit" data-go2="${h.go}"><span class="badge">${esc(h.type)}</span> ${esc(h.title)}</div>`).join("");document.querySelectorAll("[data-go2]").forEach(x=>x.onclick=()=>go(x.dataset.go2))};
-function applyTheme(){const d=localStorage.getItem("solaDark")==="1";document.body.classList.toggle("dark",d);$("darkModeBtn").textContent=d?"☀️ Svetli način":"🌙 Temni način"}
+function applyTheme(){const d=localStorage.getItem("solaDark")==="1";document.body.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";document.querySelector('meta[name="theme-color"]')?.setAttribute("content",d?"#11131a":"#5b5ce2");$("darkModeBtn").textContent=d?"☀️ Svetli način":"🌙 Temni način"}
 $("darkModeBtn").onclick=()=>{localStorage.setItem("solaDark",localStorage.getItem("solaDark")==="1"?"0":"1");applyTheme()};
 async function sha256(v){const a=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(a)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 $("pinBtn").onclick=async()=>{const q=prompt("Nastavi 4–8 mestni PIN. Pusti prazno za odstranitev.","");if(q===null)return;if(q===""){localStorage.removeItem("solaPinHash");sessionStorage.removeItem("solaUnlocked");alert("PIN je odstranjen.");return}if(!/^\d{4,8}$/.test(q)){alert("PIN naj vsebuje 4–8 številk.");return}localStorage.setItem("solaPinHash",await sha256(q));sessionStorage.setItem("solaUnlocked","1");alert("PIN je nastavljen.")};
@@ -1312,7 +1467,7 @@ const tutorials={
 };
 function clearTutorialHighlight(){if(highlighted){highlighted.classList.remove("tutorial-highlight");highlighted=null}}
 function showTutorialStep(){
- clearTutorialHighlight();const s=tutorialSteps[tutorialIndex];if(!s){closeTabTutorial();return}
+ clearTutorialHighlight();document.body.classList.add("tutorial-open");const s=tutorialSteps[tutorialIndex];if(!s){closeTabTutorial();return}
  $("tutorialIcon").textContent=s.icon||"💡";$("tutorialTitle").textContent=s.title;$("tutorialText").textContent=s.text;
  $("tutorialStepLabel").textContent=`Korak ${tutorialIndex+1} od ${tutorialSteps.length}`;
  $("tutorialNext").textContent=tutorialIndex===tutorialSteps.length-1?"Končaj":"Naprej";
@@ -1324,7 +1479,7 @@ function startTabTutorial(tab,force=false){
  tutorialSteps=tutorials[tab];tutorialIndex=0;setTimeout(showTutorialStep,180);
 }
 function closeTabTutorial(){
- clearTutorialHighlight();$("tutorialPop").classList.add("hidden");
+ clearTutorialHighlight();document.body.classList.remove("tutorial-open");$("tutorialPop").classList.add("hidden");
  const tab=document.querySelector(".view.active")?.id;if(tab){tutorialSeen[tab]=true;localStorage.setItem(TUTORIAL_KEY,JSON.stringify(tutorialSeen))}
 }
 $("tutorialClose").onclick=closeTabTutorial;
