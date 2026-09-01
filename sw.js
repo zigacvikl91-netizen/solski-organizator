@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v12-8-complete-refresh";
+const CACHE="moj-organizator-v12-7-scroll-fixed";
 const CORE=["./","./index.html","./manifest.json"];
 self.addEventListener("install",event=>{
   self.skipWaiting();

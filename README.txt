@@ -7,19 +7,8 @@ Moj Organizator V12.6
 - Urejeni razmiki v Hitro dodaj.
 - Ohranjeni Web Push, Cloudflare sinhronizacija, ikone in vsi podatkovni moduli.
 
-V12.7 – LAYOUT POLISHED
-- Tutorial ne pusti več strani scrollane na sredino obrazca po zaprtju.
-- Popravljena postavitev zavihkov Danes, Koledar in Ocene.
-- Date/time/select/input polja imajo enotno višino in ne segajo iz kartic na iPhonu.
-- Datum + ura ter Ocena + datum sta na telefonu postavljena v urejen dve-kolonski blok, kjer je dovolj prostora.
-- Kartice in razmiki so bolj kompaktni.
-- Ohranjen dark mode kontrast, Web Push, Cloudflare, ikone in 3D uvod.
 
-
-V12.8:
-- popravljen quick add v svetlem in temnem načinu
-- popravljeni tutorial popupi
-- zmanjšan zgornji razmik
-- popravljena postavitev Danes / Koledar / Ocene
-- stabilizirana uvodna animacija knjige
-- Firebase ostanki niso vključeni v tej izdaji
+V12.7
+- Popravljeno scrollanje z miškinim koleščkom/trackpadom na računalniku.
+- Tutorial ne blokira scrollanja strani.
+- Na telefonu tutorial nima notranjega scrolla in ostane kompakten.
