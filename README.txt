@@ -1,4 +1,8 @@
-V12.5 WHITE SCREEN FIX
-- Kritični popravek: zaprt <style> blok pred JavaScriptom. V12.4 je imel manjkajoč </style>, zato je brskalnik preostanek strani obravnaval kot CSS in prikazal prazen/bel zaslon.
-- Ohranjeni vsi V12.3/V12.4 popravki: iPhone safe-area, temni tutoriali, Hitro dodaj, izboljšan intro knjige, ikone, Cloudflare/Web Push.
-- Service Worker cache zvišan na v12.5 in navigacija ostaja network-first/no-store.
+Moj Organizator V12.6
+- Popravljen velik prazen razmak na vrhu v iPhone PWA načinu.
+- Tutorial okno je zdaj visoko samo toliko, kolikor potrebuje vsebina.
+- Popravljen tutorial v temnem načinu in kontrast besedila.
+- Onboarding je prilagojen višini zaslona.
+- Umirjena 3D animacija knjige: strani ostanejo znotraj knjige.
+- Urejeni razmiki v Hitro dodaj.
+- Ohranjeni Web Push, Cloudflare sinhronizacija, ikone in vsi podatkovni moduli.

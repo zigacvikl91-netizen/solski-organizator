@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Moj Organizator">
-<link rel="manifest" href="manifest.json?v=12.5">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.5">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.5">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.5">
+<link rel="manifest" href="manifest.json?v=12.6">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.6">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.6">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.6">
 <title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
@@ -573,6 +573,87 @@ body.dark .intro-skip{background:rgba(22,26,40,.82);color:#f3f5ff;border-color:r
 /* Small extra polish */
 .notification-item,.notification-status,.schedule-slot,.calendar-detail-item{box-shadow:0 6px 20px rgba(21,28,44,.04)}
 .file-note{line-height:1.45}
+
+
+
+/* V12.6 – final layout fixes from iPhone screenshots */
+/* iOS standalone already reserves the status bar area. Do not add a second huge safe-area gap. */
+main{padding-top:18px!important;padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}
+@media (display-mode: standalone){
+  main{padding-top:14px!important}
+}
+@media(max-width:520px){
+  main{padding-top:14px!important}
+}
+@media (max-width:520px) and (display-mode: standalone){
+  main{padding-top:12px!important}
+}
+#home>.hero{margin-top:0!important;padding-top:0!important}
+.view{padding-top:0!important}
+.view>h1:first-child,.view>.hero:first-child{margin-top:0!important}
+
+/* Tutorial: content-sized card instead of a giant sheet from top to bottom. */
+@media(max-width:520px){
+  .tutorial-pop{
+    top:auto!important;
+    bottom:calc(88px + env(safe-area-inset-bottom))!important;
+    left:12px!important;
+    right:12px!important;
+    width:auto!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:min(62vh,520px)!important;
+    min-height:0!important;
+    padding:16px!important;
+    overflow:hidden!important;
+  }
+  .tutorial-header{flex:0 0 auto}
+  .tutorial-body{flex:0 1 auto;max-height:220px;overflow:auto;margin-top:12px}
+  .tutorial-actions{position:static!important;flex:0 0 auto;margin-top:14px;padding-top:10px}
+  .tutorial-actions button{min-height:50px}
+}
+body.dark .tutorial-pop{background:#171b27!important;color:#f4f5fb!important;border-color:#3a4258!important}
+body.dark .tutorial-body{color:#d4d9e7!important}
+body.dark .tutorial-pop .muted,body.dark .tutorial-pop .small{color:#aeb7ca!important}
+body.dark .tutorial-pop h3{color:#eef1ff!important}
+body.dark .tutorial-actions{background:#171b27!important}
+
+/* Onboarding also adapts to the screen without covering the nav awkwardly. */
+@media(max-width:520px){
+  .onboarding{padding:calc(env(safe-area-inset-top) + 12px) 12px calc(92px + env(safe-area-inset-bottom))}
+  .onboarding-box{margin:0 auto;max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 116px);overflow:auto;border-radius:22px;padding:18px}
+}
+
+/* Keep the book visually coherent: pages flip inside the book, not through the screen. */
+.book-stage{overflow:visible}
+.book3d{width:82%!important;height:56%!important;top:51%!important}
+.book-page{transform-origin:0 50%!important;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden!important}
+.page1{animation:pageFlip1Clean 5.5s ease forwards!important}
+.page2{animation:pageFlip2Clean 5.5s ease forwards!important}
+.page3{animation:pageFlip3Clean 5.5s ease forwards!important}
+.page4{animation:pageFlip4Clean 5.5s ease forwards!important}
+@keyframes pageFlip1Clean{0%,26%{transform:translateZ(7px) rotateY(0)}48%,100%{transform:translateZ(7px) rotateY(-158deg)}}
+@keyframes pageFlip2Clean{0%,38%{transform:translateZ(5px) rotateY(0)}59%,100%{transform:translateZ(5px) rotateY(-154deg)}}
+@keyframes pageFlip3Clean{0%,50%{transform:translateZ(3px) rotateY(0)}70%,100%{transform:translateZ(3px) rotateY(-150deg)}}
+@keyframes pageFlip4Clean{0%,62%{transform:translateZ(1px) rotateY(0)}82%,100%{transform:translateZ(1px) rotateY(-146deg)}}
+@media(max-width:520px){
+  .book-stage{height:48vh!important;min-height:330px!important}
+  .book3d{width:88%!important;height:52%!important;top:50%!important}
+  .book-page{font-size:11px!important;line-height:1.35!important;padding:15px 10px 10px 24px!important}
+  .study-chip{font-size:11px!important;padding:8px 10px!important}
+  .study-chip.left{left:18px!important;top:61%!important}
+  .study-chip.right{right:18px!important;top:33%!important}
+  .study-chip.bottom{bottom:13%!important}
+}
+
+/* Quick add: balanced spacing in both light and dark mode. */
+.quick-add-card{padding:18px!important}
+.quick-add-card .quick-add-grid{gap:10px!important}
+.quick-add-card .quick-add-reset{margin-top:4px}
+@media(max-width:520px){
+  .quick-add-card .quick-add-grid{grid-template-columns:1fr 1fr!important}
+  .quick-add-card .quick-add-grid button{min-height:56px!important}
+}
 
 </style>
 <script>
