@@ -291,9 +291,160 @@ button.danger{cursor:pointer}
 body.dark .health-ok,body.dark .health-warn,body.dark .health-error{background:#20242f!important;color:#f4f5fb!important}
 button:disabled{opacity:.55;cursor:not-allowed}
 
+/* V12 – uvodna 3D knjiga */
+.book-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:hidden;
+ background:radial-gradient(circle at 50% 40%,#fff8fb 0,#f2e7ff 42%,#d8cbff 100%);transition:opacity .55s ease,visibility .55s ease}
+.book-intro.finished{opacity:0;visibility:hidden;pointer-events:none}
+.book-intro::before,.book-intro::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);opacity:.5}
+.book-intro::before{width:42vmax;height:42vmax;left:-24vmax;top:-20vmax;background:#ffd8ea}
+.book-intro::after{width:38vmax;height:38vmax;right:-22vmax;bottom:-22vmax;background:#cdbbff}
+.intro-title{position:absolute;top:max(7vh,calc(env(safe-area-inset-top) + 26px));left:20px;right:20px;text-align:center;
+ color:#59457f;font-size:clamp(20px,5.4vw,29px);font-weight:850;letter-spacing:-.4px;opacity:0;animation:introTitle 5.5s ease forwards}
+.book-stage{position:relative;width:min(86vw,430px);height:min(67vw,335px);perspective:1200px;z-index:1;transform:translateY(22px)}
+.book-shadow{position:absolute;left:12%;right:12%;bottom:5%;height:13%;border-radius:50%;background:rgba(72,46,112,.24);filter:blur(14px);animation:shadowPulse 5.5s ease forwards}
+.book3d{position:absolute;left:50%;top:52%;width:76%;height:60%;transform:translate(-50%,-50%) rotateX(58deg) rotateZ(-4deg);transform-style:preserve-3d;
+ animation:bookLift 5.5s cubic-bezier(.22,.75,.25,1) forwards}
+.book-back,.book-front{position:absolute;inset:0;border-radius:11px 18px 18px 11px;background:linear-gradient(135deg,#7253bf,#a879df 58%,#5b3f9e);
+ box-shadow:inset 0 0 0 3px rgba(255,255,255,.17),0 8px 18px rgba(68,38,111,.3);transform-origin:left center;transform-style:preserve-3d}
+.book-back{transform:translateZ(-9px)}
+.book-front{z-index:8;background:linear-gradient(135deg,#a36fd3,#d89fdc 48%,#7253bf);animation:coverOpen 5.5s cubic-bezier(.35,.05,.22,1) forwards}
+.book-front::before{content:"MOJ ORGANIZATOR";position:absolute;inset:20% 12%;display:grid;place-items:center;text-align:center;border:2px solid rgba(255,235,190,.65);
+ color:#fff4cf;font-size:clamp(10px,2.6vw,15px);font-weight:900;letter-spacing:1.5px;border-radius:10px;text-shadow:0 1px 2px #594078}
+.book-page{position:absolute;inset:5px 7px 5px 5px;border-radius:7px 15px 15px 7px;background:linear-gradient(90deg,#f2dfbd,#fffdf3 12%,#fffaf0 88%,#ead5ae);
+ transform-origin:left center;transform-style:preserve-3d;box-shadow:inset -3px 0 4px rgba(100,70,35,.08);overflow:hidden;color:#685d62;padding:16px 18px 12px 28px;
+ font-family:"Bradley Hand","Segoe Print",cursive;font-size:clamp(7px,1.9vw,11px);line-height:1.42}
+.book-page::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:#efb7b7}
+.book-page::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0,transparent 17px,rgba(133,164,198,.22) 18px);pointer-events:none}
+.book-page>*{position:relative;z-index:1}.book-page b{color:#6650a0}.book-page .formula{font-family:"Times New Roman",serif;font-size:1.12em;color:#405789}
+.page1{z-index:7;animation:pageFlip1 5.5s ease forwards}.page2{z-index:6;animation:pageFlip2 5.5s ease forwards}.page3{z-index:5;animation:pageFlip3 5.5s ease forwards}
+.page4{z-index:4;animation:pageFlip4 5.5s ease forwards}.page5{z-index:3}.book-ribbon{position:absolute;z-index:9;right:14%;bottom:-12%;width:9%;height:35%;background:linear-gradient(#e8a3b3,#b85e83);border-radius:0 0 3px 3px;transform:translateZ(3px)}
+.book-ribbon::after{content:"";position:absolute;left:0;right:0;bottom:-1px;margin:auto;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:11px solid #f6eaff}
+.intro-skip{position:absolute;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));z-index:2;border:1px solid rgba(91,63,140,.2);background:rgba(255,255,255,.52);color:#5c497c;
+ backdrop-filter:blur(8px);min-height:40px;padding:8px 15px;font-size:13px}
+@keyframes coverOpen{0%,17%{transform:rotateY(0)}38%,100%{transform:rotateY(-176deg)}}
+@keyframes pageFlip1{0%,38%{transform:rotateY(0)}52%,100%{transform:rotateY(-174deg)}}
+@keyframes pageFlip2{0%,49%{transform:rotateY(0)}63%,100%{transform:rotateY(-171deg)}}
+@keyframes pageFlip3{0%,60%{transform:rotateY(0)}74%,100%{transform:rotateY(-168deg)}}
+@keyframes pageFlip4{0%,71%{transform:rotateY(0)}85%,100%{transform:rotateY(-165deg)}}
+@keyframes bookLift{0%{transform:translate(-50%,-42%) rotateX(69deg) rotateZ(-4deg) scale(.82)}18%{transform:translate(-50%,-55%) rotateX(61deg) rotateZ(-4deg) scale(1)}38%,86%{transform:translate(-50%,-50%) rotateX(53deg) rotateZ(-2deg) scale(1.03)}100%{transform:translate(-50%,-50%) rotateX(49deg) rotateZ(0) scale(1.06)}}
+@keyframes shadowPulse{0%{transform:scale(.7);opacity:.08}24%,90%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:.6}}
+@keyframes introTitle{0%,8%{opacity:0;transform:translateY(-8px)}18%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){.book3d,.book-front,.book-page,.book-shadow,.intro-title{animation-duration:.01ms!important;animation-delay:0s!important}.book-intro{transition-duration:.01ms}}
+
+
+/* V12.1 – iPhone safe-area + temni način + UI popravki */
+html,body{min-height:100%;min-height:100dvh}
+body{padding-top:env(safe-area-inset-top)}
+main{
+  padding-top:max(18px,calc(env(safe-area-inset-top) + 10px));
+  padding-bottom:calc(112px + env(safe-area-inset-bottom));
+}
+.nav{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+
+body.dark .schedule-slot{
+  background:#1b1e28!important;
+  color:#f4f5fb!important;
+  border-color:#34394a!important;
+}
+body.dark .schedule-slot .schedule-time,
+body.dark .schedule-slot b{color:#f4f5fb!important}
+body.dark .schedule-slot .small,
+body.dark .schedule-slot .muted{color:#aeb4c4!important}
+
+body.dark .notice,
+body.dark .notification-status{
+  background:#20242f!important;
+  color:#f4f5fb!important;
+  border-color:#3a4052!important;
+}
+body.dark .health-ok{
+  background:#1e3529!important;
+  color:#c9f6d7!important;
+  border-color:#5b9a74!important;
+}
+body.dark .health-warn{
+  background:#392e19!important;
+  color:#ffe3a3!important;
+  border-color:#846b35!important;
+}
+body.dark .health-error{
+  background:#3a2024!important;
+  color:#ffc4c4!important;
+  border-color:#8f5059!important;
+}
+
+.quick-add-card .hero{align-items:flex-start}
+.quick-add-card .row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.quick-add-card .row button{width:100%;min-width:0}
+
+.import-wrap{
+  border:1px solid var(--border);
+  border-radius:15px;
+  padding:12px;
+  background:rgba(255,255,255,.68);
+}
+.import-wrap input[type=file]{
+  border:0!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+}
+.import-wrap input[type=file]::file-selector-button{
+  border:0;
+  border-radius:11px;
+  padding:10px 14px;
+  margin-right:10px;
+  font-weight:750;
+  background:#ececf1;
+  color:var(--text);
+}
+body.dark .import-wrap{
+  background:#151821!important;
+  border-color:#3b4154!important;
+}
+body.dark .import-wrap input[type=file]{color:#f4f5fb!important}
+body.dark .import-wrap input[type=file]::file-selector-button{
+  background:#242836!important;
+  color:#f4f5fb!important;
+}
+
+@media(max-width:520px){
+  .toolbar{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .toolbar>*{width:100%;min-width:0!important}
+  .quick-add-card .hero{display:block}
+  .quick-add-card .hero>button{width:100%;margin-top:10px}
+}
+
 </style>
 </head>
 <body>
+
+<div id="bookIntro" class="book-intro" aria-label="Uvodna animacija šolske knjige">
+ <div class="intro-title">Odpri znanje. Dosezi cilj. ✨</div>
+ <div class="book-stage" aria-hidden="true">
+  <div class="book-shadow"></div>
+  <div class="book3d">
+   <div class="book-back"></div>
+   <div class="book-page page5"><b>Statistika</b><br><span class="formula">x̄ = Σx / n</span><br>Mediana • modus • povprečje<br><br><b>Poslovanje</b><br>prihodki − odhodki = rezultat</div>
+   <div class="book-page page4"><b>Slovenščina</b><br>Samostalnik: kdo ali kaj?<br>Glagol: kaj dela?<br><br><b>Nemščina</b><br>lernen • verstehen • schaffen</div>
+   <div class="book-page page3"><b>Zgodovina</b><br>časovni trak → vzroki → posledice<br>Pomembni dogodki in letnice<br><br>★ ponovi ključne pojme</div>
+   <div class="book-page page2"><b>Kemija</b><br><span class="formula">2H₂ + O₂ → 2H₂O</span><br>atom • molekula • spojina<br><br><span class="formula">n = m / M</span></div>
+   <div class="book-page page1"><b>Matematika</b><br><span class="formula">a² + b² = c²</span><br><span class="formula">y = kx + n</span><br><br>✓ formula<br>✓ primer<br>✓ preverjanje</div>
+   <div class="book-front"></div>
+   <div class="book-ribbon"></div>
+  </div>
+ </div>
+ <button id="skipBookIntro" class="intro-skip" type="button">Preskoči</button>
+</div>
+
 
 
 <div id="photoViewer" class="photo-viewer hidden"><button id="photoViewerClose" class="photo-viewer-close">×</button><img id="photoViewerImg" alt="Fotografija gradiva"></div>
@@ -361,8 +512,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
  <div id="notificationScheduleList" class="notification-list"></div>
  </div>
  <div class="card"><h3>⚙️ Videz, zasebnost in diagnostika</h3><div class="toolbar"><button id="darkModeBtn">🌙 Temni način</button><button id="pinBtn">🔐 Nastavi PIN</button><button id="lockNowBtn">Zakleni zdaj</button><button id="runDiagnosticsBtn">🩺 Preveri aplikacijo</button></div><div class="file-note">PIN je lokalna zaščita aplikacije na tej napravi.</div><div id="diagnosticsResult" class="notification-status" style="margin-top:10px">Diagnostika še ni bila zagnana.</div></div>
- <div class="card"><div class="hero"><h3>Hitro dodaj</h3><button id="repeatTutorials">Ponovi vodiče</button></div><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
- <div class="card"><h3>Obnovi podatke</h3><input id="importFile" type="file" accept="application/json"><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
+ <div class="card quick-add-card"><div class="hero"><h3>Hitro dodaj</h3><button id="repeatTutorials">Ponovi vodiče</button></div><div class="row"><button data-go="subjects">+ Predmet</button><button data-go="study">+ Snov</button><button data-go="calendar">+ Izpit</button><button data-go="grades">+ Ocena</button></div></div>
+ <div class="card"><h3>Obnovi podatke</h3><div class="import-wrap"><input id="importFile" type="file" accept="application/json"></div><div class="muted small" style="margin-top:7px">Podatki ostanejo lokalno na tej napravi. Občasno izvozi varnostno kopijo.</div></div>
 </section>
 
 <section id="subjects" class="view">
@@ -1197,6 +1348,16 @@ async function initializeApplication(){
  try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();
   checkPushServer(false);queueCloudReminderSync();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
 }
+
+function finishBookIntro(){
+ const intro=$("bookIntro");
+ if(!intro||intro.classList.contains("finished"))return;
+ intro.classList.add("finished");
+ setTimeout(()=>intro.remove(),650);
+}
+$("skipBookIntro")?.addEventListener("click",finishBookIntro);
+setTimeout(finishBookIntro,5500);
+
 initializeApplication();
 
 </script>
