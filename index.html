@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Moj Organizator">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="manifest" href="manifest.json?v=12.4">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.4">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.4">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.4">
 <title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
@@ -296,7 +296,7 @@ body.dark .health-ok,body.dark .health-warn,body.dark .health-error{background:#
 button:disabled{opacity:.55;cursor:not-allowed}
 
 /* V12.2 – privlačnejša uvodna knjiga */
-.book-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:hidden;
+.book-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:hidden;animation:introSafety 8s forwards;
  background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.9),rgba(246,236,255,.95) 28%,#eadfff 65%,#dfd0ff 100%);transition:opacity .6s ease,visibility .6s ease}
 .book-intro.finished{opacity:0;visibility:hidden;pointer-events:none}
 .book-intro::before,.book-intro::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
@@ -546,6 +546,7 @@ body.dark .onboarding-box button:not(.primary){background:#232a3d!important;colo
 .study-chip.right{top:30%}
 .study-chip.bottom{left:50%;right:auto;transform:translateX(-50%);bottom:10%}
 .intro-skip{backdrop-filter:blur(8px);background:rgba(255,255,255,.72)}
+@keyframes introSafety{0%,92%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden;pointer-events:none}}
 @keyframes orbDriftLeft{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(26px,18px,0) scale(1.08)}}
 @keyframes orbDriftRight{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-26px,-14px,0) scale(1.06)}}
 @keyframes sparkle{0%,100%{opacity:.35;transform:scale(.78) rotate(0deg)}50%{opacity:1;transform:scale(1.18) rotate(10deg)}}
@@ -573,6 +574,21 @@ body.dark .intro-skip{background:rgba(22,26,40,.82);color:#f3f5ff;border-color:r
 .notification-item,.notification-status,.schedule-slot,.calendar-detail-item{box-shadow:0 6px 20px rgba(21,28,44,.04)}
 .file-note{line-height:1.45}
 
+<script>
+/* V12.4 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
+window.addEventListener('error', function(){
+  const intro=document.getElementById('bookIntro');
+  if(intro){ intro.classList.add('finished'); setTimeout(()=>intro.remove(),650); }
+});
+window.addEventListener('unhandledrejection', function(){
+  const intro=document.getElementById('bookIntro');
+  if(intro){ intro.classList.add('finished'); setTimeout(()=>intro.remove(),650); }
+});
+setTimeout(function(){
+  const intro=document.getElementById('bookIntro');
+  if(intro){ intro.classList.add('finished'); setTimeout(()=>intro.remove(),650); }
+}, 7500);
+</script>
 </head>
 <body>
 
@@ -1500,7 +1516,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 async function initializeApplication(){
- try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();
+ try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();
   checkPushServer(false);queueCloudReminderSync();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
 }
 

@@ -1,7 +1,51 @@
-const CACHE="moj-organizator-v12-3-complete-fix";
-const CORE=["./","./index.html","./manifest.json","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon-180.png"];
-self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)))});
-self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener("fetch",event=>{if(event.request.method!=="GET")return;if(event.request.mode==="navigate"){event.respondWith(fetch(event.request).then(r=>{if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put("./index.html",c)).catch(()=>{})}return r}).catch(()=>caches.match("./index.html")));return}event.respondWith(fetch(event.request).then(r=>{if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put(event.request,c)).catch(()=>{})}return r}).catch(()=>caches.match(event.request)))});
-self.addEventListener("push",event=>{let data={title:"📚 Moj Organizator",body:"Imaš novo obvestilo.",url:"./"};try{if(event.data)data={...data,...event.data.json()}}catch{try{if(event.data)data.body=event.data.text()}catch{}}event.waitUntil(self.registration.showNotification(data.title,{body:data.body,tag:data.tag||"moj-organizator",data:{url:data.url||"./"}}))});
-self.addEventListener("notificationclick",event=>{event.notification.close();const target=event.notification.data?.url||"./";event.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{for(const client of list){if("focus" in client){try{client.navigate(target)}catch{}return client.focus()}}return clients.openWindow?clients.openWindow(target):undefined}))});
+const CACHE="moj-organizator-v12-4-white-screen-hotfix";
+const CORE=["./","./index.html","./manifest.json"];
+self.addEventListener("install",event=>{
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE).then(async cache=>{
+      for(const url of CORE){
+        try{await cache.add(url)}catch(err){console.warn("Cache skip",url,err)}
+      }
+    })
+  );
+});
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
+  );
+});
+self.addEventListener("fetch",event=>{
+  if(event.request.method!=="GET")return;
+  if(event.request.mode==="navigate"){
+    event.respondWith(
+      fetch(event.request,{cache:"no-store"})
+        .then(r=>{
+          if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put("./index.html",c)).catch(()=>{})}
+          return r;
+        })
+        .catch(()=>caches.match("./index.html").then(r=>r||caches.match("./")))
+    );
+    return;
+  }
+  event.respondWith(
+    fetch(event.request).then(r=>{
+      if(r&&r.ok){const c=r.clone();caches.open(CACHE).then(x=>x.put(event.request,c)).catch(()=>{})}
+      return r;
+    }).catch(()=>caches.match(event.request))
+  );
+});
+self.addEventListener("push",event=>{
+  let data={title:"📚 Moj Organizator",body:"Imaš novo obvestilo.",url:"./"};
+  try{if(event.data)data={...data,...event.data.json()}}catch{try{if(event.data)data.body=event.data.text()}catch{}}
+  event.waitUntil(self.registration.showNotification(data.title,{body:data.body,tag:data.tag||"moj-organizator",data:{url:data.url||"./"}}));
+});
+self.addEventListener("notificationclick",event=>{
+  event.notification.close();
+  const target=event.notification.data?.url||"./";
+  event.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{
+    for(const client of list){if("focus" in client){try{client.navigate(target)}catch{}return client.focus()}}
+    return clients.openWindow?clients.openWindow(target):undefined;
+  }));
+});
