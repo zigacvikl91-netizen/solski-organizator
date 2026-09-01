@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Moj Organizator">
-<link rel="manifest" href="manifest.json?v=12.4">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.4">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.4">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.4">
+<link rel="manifest" href="manifest.json?v=12.5">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=12.5">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12.5">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=12.5">
 <title>Moj Organizator</title>
 <style>
 :root{--bg:#f6f8ff;--card:#fff;--text:#172033;--muted:#697386;--accent:#5b5ce2;--accent2:#8b5cf6;--blue:#eaf3ff;--purple:#f1ecff;--green:#eaf9f0;--yellow:#fff7dc;--pink:#fff0f5;--border:#dfe4f0;--ok:#16803b;--warn:#b66a00;--danger:#b42318}
@@ -574,8 +574,9 @@ body.dark .intro-skip{background:rgba(22,26,40,.82);color:#f3f5ff;border-color:r
 .notification-item,.notification-status,.schedule-slot,.calendar-detail-item{box-shadow:0 6px 20px rgba(21,28,44,.04)}
 .file-note{line-height:1.45}
 
+</style>
 <script>
-/* V12.4 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
+/* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
 window.addEventListener('error', function(){
   const intro=document.getElementById('bookIntro');
   if(intro){ intro.classList.add('finished'); setTimeout(()=>intro.remove(),650); }

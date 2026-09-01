@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v12-4-white-screen-hotfix";
+const CACHE="moj-organizator-v12-5-white-screen-fixed";
 const CORE=["./","./index.html","./manifest.json"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
