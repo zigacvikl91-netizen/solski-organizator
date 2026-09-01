@@ -14,3 +14,12 @@ V12.7 – LAYOUT POLISHED
 - Datum + ura ter Ocena + datum sta na telefonu postavljena v urejen dve-kolonski blok, kjer je dovolj prostora.
 - Kartice in razmiki so bolj kompaktni.
 - Ohranjen dark mode kontrast, Web Push, Cloudflare, ikone in 3D uvod.
+
+
+V12.8:
+- popravljen quick add v svetlem in temnem načinu
+- popravljeni tutorial popupi
+- zmanjšan zgornji razmik
+- popravljena postavitev Danes / Koledar / Ocene
+- stabilizirana uvodna animacija knjige
+- Firebase ostanki niso vključeni v tej izdaji
