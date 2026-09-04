@@ -1186,7 +1186,7 @@ setTimeout(function(){
  </form></div>
  <div class="card"><h3>✅ Checklist poglavij</h3><label>Predmet<select id="chapterChecklistSubject"></select></label><div id="chapterChecklist"></div></div>
  <div class="card"><h3>Iskanje</h3><input id="search" placeholder="Poišči po snovi, naslovu, poglavju ali predmetu"></div>
-<div class="card" id="fileCenterCard"><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><span id="fileCountBadge" class="badge">0</span></div>
+<div class="card" id="fileCenterCard"><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button id="openTrashBtn" type="button" class="secondary" style="min-height:36px;padding:7px 10px">🗑️ Koš</button><span id="fileCountBadge" class="badge">0</span></div></div>
  <div class="file-center-toolbar"><input id="fileSearch" placeholder="Išči po imenu, oznaki ali zapisku"><select id="fileTypeFilter"><option value="">Vse vrste</option><option value="pdf">PDF</option><option value="word">Word</option><option value="powerpoint">PowerPoint</option><option value="excel">Excel</option><option value="image">Slike</option></select><select id="fileViewFilter"><option value="active">Aktivne</option><option value="favorites">Priljubljene</option><option value="recent">Nedavno odprte</option><option value="trash">Koš</option></select></div>
  <div id="fileCenterList"></div>
 </div>
@@ -1324,7 +1324,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.4",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.6",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1833,59 +1833,79 @@ async function renderPendingFiles(){
 }
 function openStoredFile(id){
  const r=FILE_RUNTIME_CACHE.get(id);
+ const popup=window.open("about:blank","_blank");
 
- // iOS Web Share requires transient user activation. Therefore the Share call
- // must happen immediately from the click, without awaiting IndexedDB first.
- if(r?.blob && !r.deletedAt){
-  const name=r.name||"datoteka";
-  const type=r.type||r.blob.type||"application/octet-stream";
-  let file;
-  try{file=new File([r.blob],name,{type,lastModified:r.created||Date.now()})}
-  catch{file=null}
-
-  if(file && navigator.share){
-   const data={files:[file],title:name};
-   let can=true;
-   try{if(navigator.canShare)can=navigator.canShare(data)}catch{}
-   if(can){
-    navigator.share(data)
-      .then(async()=>{
-        try{r.lastOpened=Date.now();await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}catch{}
-        renderFileCenter().catch(()=>{})
-      })
-      .catch(err=>{
-        if(err?.name!=="AbortError"){
-          console.warn("Native file share failed:",err);
-          alert("iPhone datoteke ni mogel predati aplikaciji. Poskusi še enkrat ali izberi »Shrani v Datoteke«.")
-        }
-      });
-    return
-   }
-  }
-
-  // Desktop / browsers without file sharing.
+ const doOpen=async()=>{
   try{
-   const u=URL.createObjectURL(r.blob);
-   const a=document.createElement("a");
-   a.href=u;a.download=name;a.rel="noopener";a.style.display="none";
-   document.body.appendChild(a);a.click();a.remove();
-   setTimeout(()=>URL.revokeObjectURL(u),120000);
-   r.lastOpened=Date.now();photoPut(r).catch(()=>{});
-   renderFileCenter().catch(()=>{});
-   return
+   const res=await syncFetch("/files/open-token/"+encodeURIComponent(id),{method:"POST"});
+   if(!res.ok){
+    let msg="";
+    try{msg=(await res.json()).error||""}catch{}
+    throw new Error(msg||("Odpiranje ni uspelo ("+res.status+")."))
+   }
+   const data=await res.json();
+   if(!data?.url)throw new Error("Manjka povezava za odpiranje.");
+   if(popup)popup.location.href=data.url;
+   else window.location.href=data.url;
+
+   if(r){
+    r.lastOpened=Date.now();
+    photoPut(r).catch(()=>{});
+    renderFileCenter().catch(()=>{})
+   }
   }catch(err){
-   console.error(err)
+   try{if(popup)popup.close()}catch{}
+   console.error("Odpiranje datoteke:",err);
+   alert("Datoteke ni bilo mogoče odpreti: "+(err?.message||err))
+  }
+ };
+
+ // Če datoteka še ni v runtime cache, jo samo pripravimo za prikaz metapodatkov,
+ // samo odpiranje pa gre prek varnega Worker URL-ja.
+ if(!r){
+  photoGet(id).then(r2=>{if(r2)FILE_RUNTIME_CACHE.set(id,r2)}).catch(()=>{})
+ }
+ doOpen()
+}
+
+function shareStoredFile(id){
+ const r=FILE_RUNTIME_CACHE.get(id);
+ if(!r?.blob||r.deletedAt){
+  photoGet(id).then(r2=>{
+   if(!r2||r2.deletedAt){alert("Datoteke na tej napravi ni mogoče najti.");return}
+   FILE_RUNTIME_CACHE.set(id,r2);
+   toast("Datoteka je pripravljena. Pritisni »Deli« še enkrat.")
+  }).catch(()=>alert("Datoteke ni bilo mogoče pripraviti za deljenje."));
+  return
+ }
+
+ const name=r.name||"datoteka";
+ const type=r.type||r.blob.type||"application/octet-stream";
+ let file;
+ try{file=new File([r.blob],name,{type,lastModified:r.created||Date.now()})}
+ catch{file=null}
+
+ if(file && navigator.share){
+  const data={files:[file],title:name};
+  let can=true;
+  try{if(navigator.canShare)can=navigator.canShare(data)}catch{}
+  if(can){
+   navigator.share(data)
+    .then(async()=>{
+      try{r.lastOpened=Date.now();await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}catch{}
+      renderFileCenter().catch(()=>{})
+    })
+    .catch(err=>{
+      if(err?.name!=="AbortError"){
+        console.warn("Deljenje datoteke:",err);
+        alert("Datoteke ni bilo mogoče deliti.")
+      }
+    });
+   return
   }
  }
 
- // If the record was not yet in memory, load it and ask the user to tap once more.
- photoGet(id).then(r2=>{
-  if(!r2||r2.deletedAt){alert("Datoteke na tej napravi ni mogoče najti.");return}
-  FILE_RUNTIME_CACHE.set(id,r2);
-  toast("Datoteka je pripravljena. Pritisni »Odpri / deli« še enkrat.")
- }).catch(()=>{
-  alert("Datoteke ni bilo mogoče pripraviti za odpiranje.")
- })
+ alert("Deljenje datotek v tem brskalniku ni podprto.")
 }
 async function hydrateMaterialFiles(){
  for(const el of document.querySelectorAll("[data-material-files]")){
@@ -1974,12 +1994,16 @@ async function renderFileCenter(){
    ${tags?`<div class="file-tags">${tags}</div>`:""}
    ${links?`<div class="file-meta" style="margin-top:7px">${links}</div>`:""}
    <div class="small muted" style="margin-top:8px">${fileStatusLabel(r.status)} · ${Math.max(0,Math.min(100,Number(r.progress)||0))}%</div><div class="file-progress"><i style="width:${Math.max(0,Math.min(100,Number(r.progress)||0))}%"></i></div>
-   <div class="file-actions">${view==="trash"?`<button onclick="restoreFile('${r.id}')">↩️ Obnovi</button><button class="danger" onclick="deleteFileForever('${r.id}')">Trajno izbriši</button>`:`<button onclick="openStoredFile('${r.id}')">Odpri / deli</button><button onclick="toggleFileFavorite('${r.id}')">${r.favorite?"★ Odstrani priljubljeno":"☆ Priljubljeno"}</button><button onclick="toggleFileImportant('${r.id}')">${r.important?"✓ Ni nujno":"❗ Pomembno"}</button><button onclick="editFileMeta('${r.id}')">Oznake / napredek</button><button onclick="linkFile('${r.id}')">Poveži</button><button class="danger" onclick="trashFile('${r.id}')">Koš</button>`}</div>
+   <div class="file-actions">${view==="trash"?`<button onclick="restoreFile('${r.id}')">↩️ Obnovi</button><button class="danger" onclick="deleteFileForever('${r.id}')">Trajno izbriši</button>`:`<button onclick="openStoredFile('${r.id}')">📂 Odpri</button><button onclick="shareStoredFile('${r.id}')">↗️ Deli</button><button onclick="toggleFileFavorite('${r.id}')">${r.favorite?"★ Odstrani priljubljeno":"☆ Priljubljeno"}</button><button onclick="toggleFileImportant('${r.id}')">${r.important?"✓ Ni nujno":"❗ Pomembno"}</button><button onclick="editFileMeta('${r.id}')">Oznake / napredek</button><button onclick="linkFile('${r.id}')">Poveži</button><button class="danger" onclick="trashFile('${r.id}')">Koš</button>`}</div>
   </div>`
  }).join("")
 }
 function setupFileCenter(){
- ["fileSearch","fileTypeFilter","fileViewFilter"].forEach(id=>$(id)?.addEventListener(id==="fileSearch"?"input":"change",()=>renderFileCenter().catch(()=>{})))
+ ["fileSearch","fileTypeFilter","fileViewFilter"].forEach(id=>$(id)?.addEventListener(id==="fileSearch"?"input":"change",()=>renderFileCenter().catch(()=>{})));
+ $("openTrashBtn")?.addEventListener("click",()=>{
+  const f=$("fileViewFilter");if(f)f.value="trash";
+  renderFileCenter().then(()=>$("fileCenterCard")?.scrollIntoView({behavior:"smooth",block:"start"})).catch(()=>{})
+ })
 }
 
 function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)})}
@@ -2170,7 +2194,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.4: iOS share gesture fix + D1 + Workers KV file sync =====
+// ===== V14.6: viden Koš + ločen Odpri in Deli =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}

@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v14-4-ios-share-fix";
+const CACHE="moj-organizator-v14-6-trash-button";
 const CORE=[
   "./",
   "./index.html",
