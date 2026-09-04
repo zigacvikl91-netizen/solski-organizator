@@ -103,6 +103,28 @@ button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2))}
 .quick-note{background:#fffbe9;border-left:4px solid #e7b83b;padding:10px;border-radius:10px;margin-top:7px}
 @media(max-width:520px){.photo-actions{grid-template-columns:1fr}.timer-time{font-size:38px}}
 
+.file-center-toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:10px}
+.file-card{padding:12px;border:1px solid var(--border);border-radius:15px;background:rgba(255,255,255,.66);margin-top:9px}
+body.dark .file-card{background:#20232e}
+.file-card-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.file-icon{font-size:28px;line-height:1}
+.file-title{font-weight:850;word-break:break-word}
+.file-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.file-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.file-tag{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:3px 7px;background:var(--card)}
+.file-progress{height:7px;border-radius:999px;background:#e7e8ef;overflow:hidden;margin-top:8px}
+.file-progress i{display:block;height:100%;background:currentColor}
+.file-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.file-actions button{min-height:36px;padding:7px 9px}
+.offline-card{border:1px solid #cfe7d8;background:linear-gradient(135deg,#eefbf3,#fff)}
+body.dark .offline-card{background:#1c2923;border-color:#315343}
+.offline-dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:#2da86f;margin-right:6px}
+.offline-dot.off{background:#d68b2f}
+.storage-note{padding:9px 11px;border-radius:12px;background:#fff8e8;border:1px solid #f1ddb0;margin-top:8px}
+body.dark .storage-note{background:#29261f;border-color:#564b31}
+@media(max-width:620px){.file-center-toolbar{grid-template-columns:1fr}.file-card-head{align-items:center}}
+
+
 
 /* V8 */
 body.dark{--bg:#11131a;--card:#1b1e28;--text:#f4f5fb;--muted:#aeb4c4;--border:#303545;background:#11131a;color:var(--text)}
@@ -1030,7 +1052,8 @@ setTimeout(function(){
 <section id="home" class="view active">
  <div class="hero"><div><div class="muted">Osebni šolski pomočnik</div><div class="app-title-line"><h1>Moj organizator</h1><span class="app-version-badge">Verzija <strong data-app-version></strong></span></div></div><div class="row"><button id="guideBtn">Navodila</button><button id="exportBtn">Varnostna kopija</button></div></div>
  <div id="installHelp" class="card install-note"><h3>Namestitev na iPhone</h3><div class="small">Ko je aplikacija objavljena na HTTPS naslovu: Safari → Deli → Dodaj na začetni zaslon.</div></div>
- <div class="card sync-card" id="deviceSyncCard"><div class="hero"><div><h3>🔄 Sinhronizacija naprav</h3><div class="small muted">Isti predmeti, snovi, izpiti, ocene, učitelji, zapiski in napredek na telefonu in računalniku. Fotografije in PDF-ji za zdaj ostanejo lokalno na napravi.</div></div><span id="syncDeviceState" class="badge">Lokalno</span></div><div class="sync-row"><button id="createSyncCode" class="primary">Ustvari kodo za povezavo</button><button id="enterSyncCode">Poveži drugo napravo</button></div><div class="sync-row"><button id="syncNowBtn">🔄 Sinhroniziraj zdaj</button><button id="copySyncCodeBtn">📋 Kopiraj kodo</button></div><input id="syncCodeDisplay" class="sync-code" readonly placeholder="Koda se prikaže po povezavi" style="margin-top:10px"><div id="deviceSyncStatus" class="sync-status">Sinhronizacija še ni povezana. Podatki so trenutno samo na tej napravi.</div></div>
+ <div class="card offline-card"><div class="hero"><div><h3>📴 Offline način</h3><div class="small muted">Aplikacija, predmeti, ocene, koledar, zapiski in lokalno shranjene datoteke delujejo tudi brez interneta.</div></div><span id="offlineState" class="badge"><span class="offline-dot"></span>Online</span></div><div id="offlineInfo" class="small muted">Ko izgubiš povezavo, se spremembe shranijo na napravi in se besedilni podatki sinhronizirajo ob ponovni povezavi.</div></div>
+<div class="card sync-card" id="deviceSyncCard"><div class="hero"><div><h3>🔄 Sinhronizacija naprav</h3><div class="small muted">Isti predmeti, snovi, izpiti, ocene, učitelji, zapiski in napredek na telefonu in računalniku. Predmeti, snovi, izpiti, ocene, učitelji, zapiski, napredek in datoteke (PDF, Word, PowerPoint, Excel in slike) se sinhronizirajo med telefonom in računalnikom. Lokalno shranjene datoteke ostanejo na voljo tudi brez interneta.</div></div><span id="syncDeviceState" class="badge">Lokalno</span></div><div class="sync-row"><button id="createSyncCode" class="primary">Ustvari kodo za povezavo</button><button id="enterSyncCode">Poveži drugo napravo</button></div><div class="sync-row"><button id="syncNowBtn">🔄 Sinhroniziraj zdaj</button><button id="copySyncCodeBtn">📋 Kopiraj kodo</button></div><input id="syncCodeDisplay" class="sync-code" readonly placeholder="Koda se prikaže po povezavi" style="margin-top:10px"><div id="deviceSyncStatus" class="sync-status">Sinhronizacija še ni povezana. Podatki so trenutno samo na tej napravi.</div></div>
  <div class="stats">
   <div class="card stat"><b id="sSubjects">0</b><small>predmetov</small></div>
   <div class="card stat"><b id="sPending">0</b><small>za učenje</small></div>
@@ -1098,11 +1121,15 @@ setTimeout(function(){
    <div class="photo-actions"><label class="photo-action">📷 Slikaj gradivo<input id="materialCamera" type="file" accept="image/*" capture="environment" multiple hidden></label><label class="photo-action">🖼️ Izberi iz galerije<input id="materialGallery" type="file" accept="image/*" multiple hidden></label></div>
    <div id="materialPhotoPreview" class="photo-grid"></div><div id="materialPhotoInfo" class="small muted">Ni dodanih fotografij.</div>
   </div>
-  <div class="pdf-box"><b>📄 PDF gradivo</b><div class="small muted">Dodaj PDF, ki ga je poslal profesor.</div><label class="photo-action" style="margin-top:8px!important">📎 Izberi PDF<input id="materialPdf" type="file" accept="application/pdf" multiple hidden></label><div id="materialPdfPreview" class="asset-row"></div><div id="materialPdfInfo" class="file-note">Ni dodanih PDF datotek.</div></div>
+  <div class="pdf-box"><b>📁 Dokumenti in datoteke</b><div class="small muted">Dodaj PDF, Word, PowerPoint ali Excel. Datoteke se shranijo lokalno za uporabo brez interneta in se ob sinhronizaciji prenesejo tudi v drugo povezano napravo.</div><label class="photo-action" style="margin-top:8px!important">📎 Izberi datoteke<input id="materialPdf" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden></label><div id="materialPdfPreview" class="asset-row"></div><div id="materialPdfInfo" class="file-note">Ni dodanih dokumentov.</div><div class="storage-note small">💾 Posamezna datoteka je omejena na 20 MB zaradi brezplačne oblačne shrambe. Lokalni prostor je odvisen od naprave.</div></div>
   <button id="materialSaveBtn" class="primary">Razvrsti in dodaj</button>
  </form></div>
  <div class="card"><h3>✅ Checklist poglavij</h3><label>Predmet<select id="chapterChecklistSubject"></select></label><div id="chapterChecklist"></div></div>
  <div class="card"><h3>Iskanje</h3><input id="search" placeholder="Poišči po snovi, naslovu, poglavju ali predmetu"></div>
+<div class="card" id="fileCenterCard"><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><span id="fileCountBadge" class="badge">0</span></div>
+ <div class="file-center-toolbar"><input id="fileSearch" placeholder="Išči po imenu, oznaki ali zapisku"><select id="fileTypeFilter"><option value="">Vse vrste</option><option value="pdf">PDF</option><option value="word">Word</option><option value="powerpoint">PowerPoint</option><option value="excel">Excel</option><option value="image">Slike</option></select><select id="fileViewFilter"><option value="active">Aktivne</option><option value="favorites">Priljubljene</option><option value="recent">Nedavno odprte</option><option value="trash">Koš</option></select></div>
+ <div id="fileCenterList"></div>
+</div>
  <div id="materialList"></div>
 
  <div class="card"><h3>❓ Vprašanja za profesorja</h3><form id="questionForm"><label>Predmet<select id="questionSubject"></select></label><label>Vprašanje<input id="questionText" placeholder="Kaj mi ni jasno?"></label><button class="primary">Dodaj vprašanje</button></form><div id="questionList"></div></div>
@@ -1237,7 +1264,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V13.2",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.1",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1317,7 +1344,7 @@ function render(){
  setSelectOptions("materialSubject",opts());setSelectOptions("examSubject",opts());setSelectOptions("teacherSubject",opts("Brez predmeta"));setSelectOptions("gradeSubject",opts());
  $("sSubjects").textContent=db.subjects.length;const done=db.materials.filter(m=>m.done).length,total=db.materials.length;$("sPending").textContent=total-done;$("sProgress").textContent=(total?Math.round(done/total*100):0)+"%";
  const weak=db.materials.filter(m=>(m.mastery||0)<=1&&!m.done).slice(0,4);$("weakTopics").innerHTML=weak.length?weak.map(m=>`<div class="small">• ${esc(subjectName(m.subject))}: ${esc(m.title)}</div>`).join(""):"Ko boš ocenjevala znanje, se tukaj pokažejo težke teme.";
- [["predmeti",renderSubjects],["gradivo",renderMaterials],["izpiti",renderExams],["plan",renderPlanner],["ocene",renderGrades],["učitelji",renderTeachers],["kartice",renderFlash],["kviz",renderQuiz],["učni načrt",renderStudyPlan],["V7",renderV7Extras],["V8",renderV8Extras],["obvestila",renderNotificationCenter]].forEach(([name,fn])=>safeRenderPart(name,fn));
+ [["predmeti",renderSubjects],["gradivo",renderMaterials],["izpiti",renderExams],["plan",renderPlanner],["ocene",renderGrades],["učitelji",renderTeachers],["kartice",renderFlash],["kviz",renderQuiz],["učni načrt",renderStudyPlan],["V7",renderV7Extras],["V8",renderV8Extras],["obvestila",renderNotificationCenter]].forEach(([name,fn])=>safeRenderPart(name,fn));setTimeout(()=>renderFileCenter().catch(err=>console.error("Datoteke:",err)),0);
 }
 function renderSubjects(){
  $("subjectList").innerHTML=db.subjects.length?db.subjects.map(s=>{let ms=db.materials.filter(m=>m.subject===s.id),d=ms.filter(m=>m.done).length,p=ms.length?Math.round(d/ms.length*100):0;const chapters=[...new Set(ms.map(m=>m.chapter).filter(Boolean))],chapterDone=chapters.filter(ch=>db.materials.filter(m=>m.subject===s.id&&m.chapter===ch).every(m=>m.done)).length;return `<div class="card subject-card"><div class="hero"><div><h3>${esc(s.name)}</h3><div class="muted small">${esc(s.desc||"")}</div><span class="muted">${ms.length} vsebin · ✅ ${chapterDone}/${chapters.length||0} poglavij</span></div><div class="row"><button class="ok" onclick="toggleSubjectComplete(\'${s.id}\')">${s.completed?"Ponovno odpri":"✓ Opravljen predmet"}</button><button onclick="editSubject('${s.id}')">Uredi</button><button class="danger" onclick="removeSubject('${s.id}')">Izbriši</button></div></div><div class="progress" style="margin-top:12px"><i style="width:${p}%"></i></div>${chapters.length?`<div class="tree">${chapters.map(ch=>`<div class="chapter"><b>${esc(ch)}</b><div class="tiny muted">${ms.filter(m=>m.chapter===ch).map(m=>esc(m.subchapter||m.title)).join(" · ")}</div></div>`).join("")}</div>`:""}</div>`}).join(""):'<div class="empty">Dodaj prvi predmet.</div>';
@@ -1582,7 +1609,7 @@ $("testNotification").onclick=()=>showStudyNotification("Šolski organizator","T
 $("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderMonthCalendar()};
 $("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderMonthCalendar()};
 
-if($("materialPdf"))$("materialPdf").onchange=e=>{addPdfFiles(e.target.files);e.target.value=""};
+if($("materialPdf"))$("materialPdf").onchange=e=>{addDocumentFiles(e.target.files);e.target.value=""};
 if($("chapterChecklistSubject"))$("chapterChecklistSubject").onchange=()=>{$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value)};
 if($("startMock"))$("startMock").onclick=startMockExam;
 if($("globalSearch"))$("globalSearch").oninput=()=>{const hits=globalSearchHits($("globalSearch").value);$("globalSearchResults").innerHTML=hits.map(h=>`<div class="search-hit" data-go2="${h.go}"><span class="badge">${esc(h.type)}</span> ${esc(h.title)}</div>`).join("");document.querySelectorAll("[data-go2]").forEach(x=>x.onclick=()=>go(x.dataset.go2))};
@@ -1676,7 +1703,7 @@ window.removeSubject=async id=>{
  save();toast("Predmet in povezani podatki so izbrisani.");
 };
 $("exportBtn").onclick=exportFullBackup;
-$("importFile").onchange=async e=>{try{await importFullBackup(e.target.files[0]);alert("Podatki, slike in PDF so obnovljeni.")}catch{alert("Datoteka ni veljavna varnostna kopija.")}};
+$("importFile").onchange=async e=>{try{await importFullBackup(e.target.files[0]);alert("Podatki, slike in dokumenti so obnovljeni.")}catch{alert("Datoteka ni veljavna varnostna kopija.")}};
 
 
 
@@ -1686,39 +1713,178 @@ async function photoPut(r){const d=await openPhotoDB();return new Promise((res,r
 async function photoGet(id){const d=await openPhotoDB();return new Promise((res,rej)=>{const q=d.transaction(PHOTO_STORE).objectStore(PHOTO_STORE).get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 async function photoDelete(id){const d=await openPhotoDB();return new Promise(res=>{const t=d.transaction(PHOTO_STORE,"readwrite");t.objectStore(PHOTO_STORE).delete(id);t.oncomplete=res})}
 function compressPhoto(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const max=1800,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));const ctx=c.getContext("2d");if(!ctx){URL.revokeObjectURL(u);rej(new Error("Canvas ni na voljo."));return}ctx.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej(new Error("Slike ni bilo mogoče obdelati."))},"image/jpeg",.82)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("Slike ni bilo mogoče odpreti."))};im.src=u})}
-async function addPhotoFiles(files){for(const f of [...files].filter(f=>f.type.startsWith("image/")).slice(0,20-pendingMaterialPhotos.length)){try{const id=uid(),blob=await compressPhoto(f);await photoPut({id,blob,created:Date.now()});pendingMaterialPhotos.push(id)}catch{}}renderPendingPhotos()}
+async function addPhotoFiles(files){for(const f of [...files].filter(f=>f.type.startsWith("image/")).slice(0,20-pendingMaterialPhotos.length)){try{const id=uid(),blob=await compressPhoto(f);await photoPut({id,blob,name:f.name||"Fotografija.jpg",type:"image/jpeg",size:blob.size||0,created:Date.now(),tags:[],note:"",favorite:false,status:"new",progress:0,important:false,lastOpened:0,deletedAt:0,examId:"",teacherId:""});pendingMaterialPhotos.push(id)}catch{}}renderPendingPhotos()}
 async function renderPendingPhotos(){const b=$("materialPhotoPreview");if(!b)return;b.innerHTML="";for(const id of pendingMaterialPhotos){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),d=document.createElement("div");d.className="photo-thumb";d.innerHTML='<img alt="Gradivo"><button type="button">×</button>';d.querySelector("img").src=u;d.querySelector("img").onload=()=>URL.revokeObjectURL(u);d.querySelector("button").onclick=async()=>{pendingMaterialPhotos=pendingMaterialPhotos.filter(x=>x!==id);if(!editingOriginalPhotos.includes(id))await photoDelete(id);renderPendingPhotos()};b.appendChild(d)}$("materialPhotoInfo").textContent=pendingMaterialPhotos.length?pendingMaterialPhotos.length+" fotografij dodanih.":"Ni dodanih fotografij."}
 async function openStoredPhoto(id){const r=await photoGet(id);if(!r)return;const u=URL.createObjectURL(r.blob);$("photoViewerImg").src=u;$("photoViewer").dataset.url=u;$("photoViewer").classList.remove("hidden")}
 function closePhotoViewer(){const u=$("photoViewer").dataset.url;if(u)URL.revokeObjectURL(u);$("photoViewer").classList.add("hidden");$("photoViewerImg").src="";$("photoViewer").dataset.url=""}
 async function hydrateMaterialPhotos(){for(const el of document.querySelectorAll("[data-material-photos]")){el.innerHTML="";const m=db.materials.find(x=>x.id===el.dataset.materialPhotos);for(const id of (m?.photos||[])){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),b=document.createElement("button");b.type="button";b.innerHTML='<img alt="Fotografija gradiva">';b.querySelector("img").src=u;b.querySelector("img").onload=()=>URL.revokeObjectURL(u);b.onclick=()=>openStoredPhoto(id);el.appendChild(b)}}}
 
-async function addPdfFiles(files){
- for(const f of [...files].filter(f=>f.type==="application/pdf").slice(0,12-pendingMaterialFiles.length)){
-  if(f.size>20*1024*1024){alert("PDF "+f.name+" je večji od 20 MB in ni bil dodan.");continue}
-  const id=uid();await photoPut({id,blob:f,name:f.name,type:"application/pdf",created:Date.now()});pendingMaterialFiles.push(id)
- } renderPendingFiles()
+
+const DOC_EXTS=new Set(["pdf","doc","docx","ppt","pptx","xls","xlsx"]);
+function fileExt(name=""){const p=String(name).toLowerCase().split(".");return p.length>1?p.pop():""}
+function fileKind(r={}){
+ const ext=fileExt(r.name||"");
+ const type=String(r.type||r.blob?.type||"").toLowerCase();
+ if(type.startsWith("image/"))return "image";
+ if(ext==="pdf"||type.includes("pdf"))return "pdf";
+ if(["doc","docx"].includes(ext)||type.includes("wordprocessing")||type.includes("msword"))return "word";
+ if(["ppt","pptx"].includes(ext)||type.includes("presentation")||type.includes("powerpoint"))return "powerpoint";
+ if(["xls","xlsx"].includes(ext)||type.includes("spreadsheet")||type.includes("excel"))return "excel";
+ return "file";
+}
+function fileIcon(r={}){
+ return {pdf:"📄",word:"📝",powerpoint:"📊",excel:"📈",image:"🖼️",file:"📎"}[fileKind(r)]||"📎"
+}
+function fileKindLabel(r={}){
+ return {pdf:"PDF",word:"Word",powerpoint:"PowerPoint",excel:"Excel",image:"Slika",file:"Datoteka"}[fileKind(r)]||"Datoteka"
+}
+function formatBytes(n=0){
+ n=Number(n)||0;if(!n)return "0 B";
+ const u=["B","KB","MB","GB"],i=Math.min(u.length-1,Math.floor(Math.log(n)/Math.log(1024)));
+ return (n/Math.pow(1024,i)).toFixed(i?1:0)+" "+u[i]
+}
+function allReferencedFileIds(){
+ return [...new Set(db.materials.flatMap(m=>[...(m.attachments||[]),...(m.photos||[])]).filter(Boolean))]
+}
+function materialForAsset(id){return db.materials.find(m=>(m.attachments||[]).includes(id)||(m.photos||[]).includes(id))||null}
+async function addDocumentFiles(files){
+ const accepted=[...files].filter(f=>DOC_EXTS.has(fileExt(f.name))||["application/pdf","application/msword","application/vnd.ms-powerpoint","application/vnd.ms-excel"].includes(f.type)||String(f.type).includes("officedocument"));
+ for(const f of accepted.slice(0,20-pendingMaterialFiles.length)){
+  if(f.size>20*1024*1024){alert("Datoteka "+f.name+" je večja od 20 MB in ni bila dodana.");continue}
+  try{
+   const id=uid();
+   await photoPut({id,blob:f,name:f.name,type:f.type||"application/octet-stream",size:f.size||0,created:Date.now(),tags:[],note:"",favorite:false,status:"new",progress:0,important:false,lastOpened:0,deletedAt:0,examId:"",teacherId:""});
+   pendingMaterialFiles.push(id)
+  }catch(err){console.error("Shranjevanje datoteke:",err);alert("Datoteke "+f.name+" ni bilo mogoče shraniti na tej napravi.")}
+ }
+ await renderPendingFiles()
 }
 async function renderPendingFiles(){
  const box=$("materialPdfPreview");if(!box)return;box.innerHTML="";
- for(const id of pendingMaterialFiles){const r=await photoGet(id);if(!r)continue;const b=document.createElement("button");b.type="button";b.className="asset-btn";b.textContent="📄 "+(r.name||"PDF");b.onclick=()=>openStoredFile(id);const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.textContent="×";x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);if(!editingOriginalFiles.includes(id))await photoDelete(id);renderPendingFiles()};box.append(b,x)}
- $("materialPdfInfo").textContent=pendingMaterialFiles.length?pendingMaterialFiles.length+" PDF datotek dodanih.":"Ni dodanih PDF datotek."
+ for(const id of pendingMaterialFiles){
+  const r=await photoGet(id);if(!r||r.deletedAt)continue;
+  const b=document.createElement("button");b.type="button";b.className="asset-btn";b.textContent=fileIcon(r)+" "+(r.name||"Datoteka");b.onclick=()=>openStoredFile(id);
+  const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.textContent="×";
+  x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);if(!editingOriginalFiles.includes(id))await photoDelete(id);await renderPendingFiles();await renderFileCenter()};
+  box.append(b,x)
+ }
+ $("materialPdfInfo").textContent=pendingMaterialFiles.length?pendingMaterialFiles.length+" dokumentov dodanih.":"Ni dodanih dokumentov."
 }
-async function openStoredFile(id){const r=await photoGet(id);if(!r)return;const u=URL.createObjectURL(r.blob);window.open(u,"_blank");setTimeout(()=>URL.revokeObjectURL(u),60000)}
+async function openStoredFile(id){
+ const r=await photoGet(id);if(!r||r.deletedAt)return;
+ r.lastOpened=Date.now();await photoPut(r);
+ const u=URL.createObjectURL(r.blob);
+ const a=document.createElement("a");a.href=u;a.target="_blank";a.rel="noopener";a.download=r.name||"datoteka";document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(u),120000);
+ setTimeout(()=>renderFileCenter().catch(()=>{}),50)
+}
 async function hydrateMaterialFiles(){
- for(const el of document.querySelectorAll("[data-material-files]")){el.innerHTML="";const m=db.materials.find(x=>x.id===el.dataset.materialFiles);for(const id of (m?.attachments||[])){const r=await photoGet(id);if(!r)continue;const b=document.createElement("button");b.type="button";b.className="asset-btn";b.textContent="📄 "+(r.name||"PDF");b.onclick=()=>openStoredFile(id);el.appendChild(b)}}
+ for(const el of document.querySelectorAll("[data-material-files]")){
+  el.innerHTML="";const m=db.materials.find(x=>x.id===el.dataset.materialFiles);
+  for(const id of (m?.attachments||[])){
+   const r=await photoGet(id);if(!r||r.deletedAt)continue;
+   const b=document.createElement("button");b.type="button";b.className="asset-btn";b.textContent=fileIcon(r)+" "+(r.name||"Datoteka");b.onclick=()=>openStoredFile(id);el.appendChild(b)
+  }
+ }
 }
+async function allLocalAssets(){
+ const d=await openPhotoDB();
+ return new Promise((res,rej)=>{
+  const q=d.transaction(PHOTO_STORE).objectStore(PHOTO_STORE).getAll();
+  q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)
+ })
+}
+async function patchAsset(id,patch){
+ const r=await photoGet(id);if(!r)return;
+ Object.assign(r,patch);await photoPut(r);await renderFileCenter();await hydrateMaterialFiles()
+}
+window.toggleFileFavorite=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{favorite:!r.favorite})};
+window.toggleFileImportant=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{important:!r.important})};
+window.trashFile=async id=>{if(!confirm("Premaknem datoteko v koš?"))return;await patchAsset(id,{deletedAt:Date.now()});toast("Datoteka je v košu.")};
+window.restoreFile=async id=>{await patchAsset(id,{deletedAt:0});toast("Datoteka je obnovljena.")};
+window.deleteFileForever=async id=>{
+ if(!confirm("Datoteko trajno izbrišem iz te naprave? Tega ni mogoče razveljaviti."))return;
+ await photoDelete(id);
+ await deleteRemoteAsset(id);
+ db.materials.forEach(m=>{m.attachments=(m.attachments||[]).filter(x=>x!==id);m.photos=(m.photos||[]).filter(x=>x!==id)});
+ persist();render();toast("Datoteka je trajno izbrisana.")
+};
+window.editFileMeta=async id=>{
+ const r=await photoGet(id);if(!r)return;
+ const tags=prompt("Oznake (ločene z vejico):",(r.tags||[]).join(", "));
+ if(tags===null)return;
+ const note=prompt("Opomba ob datoteki:",r.note||"");if(note===null)return;
+ const status=prompt("Status: new / learning / done",r.status||"new");if(status===null)return;
+ let progress=prompt("Napredek 0–100:",String(Number(r.progress)||0));if(progress===null)return;
+ progress=Math.max(0,Math.min(100,Number(progress)||0));
+ await patchAsset(id,{tags:tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,12),note:String(note).slice(0,500),status:["new","learning","done"].includes(status)?status:"new",progress});
+ toast("Podatki datoteke so shranjeni.")
+};
+window.linkFile=async id=>{
+ const r=await photoGet(id);if(!r)return;
+ const m=materialForAsset(id),subject=m?.subject||"";
+ const exams=db.exams.filter(e=>!subject||e.subject===subject);
+ const teachers=db.teachers.filter(t=>!subject||!t.subject||t.subject===subject);
+ let examId=r.examId||"",teacherId=r.teacherId||"";
+ if(exams.length){
+  const msg=["Poveži z izpitom (0 = brez):",...exams.map((e,i)=>`${i+1}. ${subjectName(e.subject)} – ${e.date}${e.time?" "+e.time:""}`)].join("\n");
+  const n=Number(prompt(msg,examId?String(exams.findIndex(e=>e.id===examId)+1):"0"));examId=n>0&&exams[n-1]?exams[n-1].id:""
+ }
+ if(teachers.length){
+  const msg=["Poveži z učiteljem (0 = brez):",...teachers.map((t,i)=>`${i+1}. ${t.name}`)].join("\n");
+  const n=Number(prompt(msg,teacherId?String(teachers.findIndex(t=>t.id===teacherId)+1):"0"));teacherId=n>0&&teachers[n-1]?teachers[n-1].id:""
+ }
+ await patchAsset(id,{examId,teacherId});toast("Povezave datoteke so shranjene.")
+};
+function fileStatusLabel(s){return s==="done"?"Končano":s==="learning"?"Učim se":"Nisem začela"}
+async function renderFileCenter(){
+ const box=$("fileCenterList");if(!box)return;
+ const q=($("fileSearch")?.value||"").trim().toLowerCase(),type=$("fileTypeFilter")?.value||"",view=$("fileViewFilter")?.value||"active";
+ let rows=(await allLocalAssets()).filter(r=>r?.blob);
+ if(view==="trash")rows=rows.filter(r=>r.deletedAt);
+ else rows=rows.filter(r=>!r.deletedAt);
+ // Only show school assets actually attached to a material.
+ rows=rows.filter(r=>materialForAsset(r.id));
+ if(view==="favorites")rows=rows.filter(r=>r.favorite);
+ if(view==="recent")rows=rows.filter(r=>r.lastOpened).sort((a,b)=>(b.lastOpened||0)-(a.lastOpened||0)).slice(0,20);
+ else rows.sort((a,b)=>(b.important?1:0)-(a.important?1:0)||(b.favorite?1:0)-(a.favorite?1:0)||(b.created||0)-(a.created||0));
+ if(type)rows=rows.filter(r=>fileKind(r)===type);
+ if(q)rows=rows.filter(r=>{
+  const m=materialForAsset(r.id);
+  return [r.name,r.note,(r.tags||[]).join(" "),m?.title,subjectName(m?.subject||"")].join(" ").toLowerCase().includes(q)
+ });
+ if($("fileCountBadge"))$("fileCountBadge").textContent=String(rows.length);
+ if(!rows.length){box.innerHTML='<div class="empty">Ni datotek za ta prikaz.</div>';return}
+ box.innerHTML=rows.map(r=>{
+  const m=materialForAsset(r.id),teacher=db.teachers.find(t=>t.id===r.teacherId),exam=db.exams.find(e=>e.id===r.examId);
+  const created=r.created?new Date(r.created).toLocaleDateString("sl-SI"):"";
+  const tags=(r.tags||[]).map(t=>`<span class="file-tag">${esc(t)}</span>`).join("");
+  const links=[teacher?"👩‍🏫 "+esc(teacher.name):"",exam?"🗓️ "+esc(exam.date):""].filter(Boolean).join(" · ");
+  return `<div class="file-card"><div class="file-card-head"><div style="display:flex;gap:10px;min-width:0"><div class="file-icon">${fileIcon(r)}</div><div style="min-width:0"><div class="file-title">${esc(r.name||"Datoteka")}</div><div class="file-meta">${fileKindLabel(r)} · ${formatBytes(r.size||r.blob?.size||0)} · ${esc(created)}${m?" · "+esc(subjectName(m.subject))+" → "+esc(m.title):""}</div></div></div><div>${r.favorite?"⭐":""}${r.important?"❗":""}</div></div>
+   ${r.note?`<div class="small" style="margin-top:7px">${esc(r.note)}</div>`:""}
+   ${tags?`<div class="file-tags">${tags}</div>`:""}
+   ${links?`<div class="file-meta" style="margin-top:7px">${links}</div>`:""}
+   <div class="small muted" style="margin-top:8px">${fileStatusLabel(r.status)} · ${Math.max(0,Math.min(100,Number(r.progress)||0))}%</div><div class="file-progress"><i style="width:${Math.max(0,Math.min(100,Number(r.progress)||0))}%"></i></div>
+   <div class="file-actions">${view==="trash"?`<button onclick="restoreFile('${r.id}')">↩️ Obnovi</button><button class="danger" onclick="deleteFileForever('${r.id}')">Trajno izbriši</button>`:`<button onclick="openStoredFile('${r.id}')">Odpri</button><button onclick="toggleFileFavorite('${r.id}')">${r.favorite?"★ Odstrani priljubljeno":"☆ Priljubljeno"}</button><button onclick="toggleFileImportant('${r.id}')">${r.important?"✓ Ni nujno":"❗ Pomembno"}</button><button onclick="editFileMeta('${r.id}')">Oznake / napredek</button><button onclick="linkFile('${r.id}')">Poveži</button><button class="danger" onclick="trashFile('${r.id}')">Koš</button>`}</div>
+  </div>`
+ }).join("")
+}
+function setupFileCenter(){
+ ["fileSearch","fileTypeFilter","fileViewFilter"].forEach(id=>$(id)?.addEventListener(id==="fileSearch"?"input":"change",()=>renderFileCenter().catch(()=>{})))
+}
+
 function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)})}
 function dataURLToBlob(s){const [h,b]=s.split(","),mime=(h.match(/data:([^;]+)/)||[])[1]||"application/octet-stream",bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
 async function exportFullBackup(){
  const ids=[...new Set(db.materials.flatMap(m=>[...(m.photos||[]),...(m.attachments||[])]))],assets=[];
- for(const id of ids){const r=await photoGet(id);if(r?.blob)assets.push({id,name:r.name||"",type:r.type||r.blob.type||"",created:r.created||0,data:await blobToDataURL(r.blob)})}
- const pack={version:10,exportedAt:new Date().toISOString(),db,assets},a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.href=u;a.download="moj-organizator-varnostna-kopija-v10.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
+ for(const id of ids){const r=await photoGet(id);if(r?.blob)assets.push({id,name:r.name||"",type:r.type||r.blob.type||"",size:r.size||r.blob.size||0,created:r.created||0,tags:r.tags||[],note:r.note||"",favorite:!!r.favorite,status:r.status||"new",progress:Number(r.progress)||0,important:!!r.important,lastOpened:Number(r.lastOpened)||0,deletedAt:Number(r.deletedAt)||0,examId:r.examId||"",teacherId:r.teacherId||"",data:await blobToDataURL(r.blob)})}
+ const pack={version:14,exportedAt:new Date().toISOString(),db,assets},a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.href=u;a.download="moj-organizator-varnostna-kopija-v14.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
 }
 async function importFullBackup(file){
  const pack=JSON.parse(await file.text()),x=pack.db||pack;if(!Array.isArray(x.subjects)||!Array.isArray(x.materials)||!Array.isArray(x.exams)||!Array.isArray(x.teachers))throw new Error("bad");
  x.grades??=[];x.studySettings??={defaultTime:"17:00",dailyMinutes:180,blockMinutes:45};x.dayOverrides??={};x.studySlots??=[];x.questions??=[];x.studySessions??=[];x.freeDays??=[];x.quickNotes??=[];x.mockHistory??=[];
  x.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});
- for(const a of (pack.assets||[])){if(a.data)await photoPut({id:a.id,name:a.name||"",type:a.type||"",created:a.created||Date.now(),blob:dataURLToBlob(a.data)})}
+ for(const a of (pack.assets||[])){if(a.data)await photoPut({id:a.id,name:a.name||"",type:a.type||"",size:a.size||0,created:a.created||Date.now(),tags:a.tags||[],note:a.note||"",favorite:!!a.favorite,status:a.status||"new",progress:Number(a.progress)||0,important:!!a.important,lastOpened:Number(a.lastOpened)||0,deletedAt:Number(a.deletedAt)||0,examId:a.examId||"",teacherId:a.teacherId||"",blob:dataURLToBlob(a.data)})}
  db=x;normalizeDb();save()
 }
 
@@ -1895,7 +2061,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V13.2: stabilna sinhronizacija telefon <-> računalnik =====
+// ===== V14.1: offline-first + D1 + Workers KV file sync =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
@@ -1906,15 +2072,118 @@ function markSyncDirty(){try{localStorage.setItem(SYNC_LOCAL_UPDATED,String(Date
 function scheduleDeviceSync(){if(!currentSyncKey()||!navigator.onLine)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow({silent:true}).catch(()=>{}),1800)}
 async function syncFetch(path,opts={}){const k=currentSyncKey();if(!k)throw new Error("Sinhronizacija ni povezana.");const h=new Headers(opts.headers||{});h.set("X-Sync-Key",k);return fetch(APP_CONFIG.syncServer+path,{...opts,headers:h})}
 function referencedAssetIds(){return [...new Set(db.materials.flatMap(m=>[...(m.photos||[]),...(m.attachments||[])]).filter(Boolean))]}
-async function uploadAssets(){return true}
-async function downloadAssets(){return true}
+const FILE_SYNC_MAX_BYTES=20*1024*1024;
+async function remoteAssetManifest(){
+ const res=await syncFetch("/files/list");
+ if(!res.ok)throw new Error("Seznama datotek ni bilo mogoče prebrati ("+res.status+").");
+ const x=await res.json();
+ return Array.isArray(x.files)?x.files:[]
+}
+async function uploadOneAsset(id,r){
+ if(!r?.blob)return;
+ const size=Number(r.size||r.blob.size||0);
+ if(size>FILE_SYNC_MAX_BYTES)throw new Error("Datoteka "+(r.name||id)+" je večja od 20 MB.");
+ const headers={
+  "Content-Type":r.type||r.blob.type||"application/octet-stream",
+  "X-File-Name":encodeURIComponent(r.name||"datoteka"),
+  "X-File-Type":encodeURIComponent(r.type||r.blob.type||"application/octet-stream"),
+  "X-File-Size":String(size)
+ };
+ const res=await syncFetch("/files/"+encodeURIComponent(id),{method:"POST",headers,body:r.blob});
+ if(!res.ok){
+  let msg="";
+  try{msg=(await res.json()).error||""}catch{}
+  throw new Error(msg||("Prenos datoteke ni uspel ("+res.status+")."))
+ }
+}
+async function uploadAssets(){
+ if(!currentSyncKey()||!navigator.onLine)return true;
+ const ids=referencedAssetIds();
+ if(!ids.length)return true;
+ const remote=await remoteAssetManifest();
+ const remoteMap=new Map(remote.map(x=>[x.id,x]));
+ for(const id of ids){
+  const r=await photoGet(id);
+  if(!r?.blob||r.deletedAt)continue;
+  const rr=remoteMap.get(id);
+  const localSize=Number(r.size||r.blob.size||0);
+  if(!rr||Number(rr.size||0)!==localSize){
+   await uploadOneAsset(id,r)
+  }
+ }
+ return true
+}
+async function downloadOneAsset(id,meta={}){
+ const res=await syncFetch("/files/"+encodeURIComponent(id));
+ if(res.status===404)return false;
+ if(!res.ok)throw new Error("Prenos datoteke ni uspel ("+res.status+").");
+ const blob=await res.blob();
+ const name=decodeURIComponent(meta.name||"datoteka");
+ const type=decodeURIComponent(meta.type||blob.type||"application/octet-stream");
+ await photoPut({
+  id,
+  blob,
+  name,
+  type,
+  size:Number(meta.size||blob.size||0),
+  created:Number(meta.created||Date.now()),
+  tags:meta.tags||[],
+  note:meta.note||"",
+  favorite:!!meta.favorite,
+  status:meta.status||"new",
+  progress:Number(meta.progress)||0,
+  important:!!meta.important,
+  lastOpened:Number(meta.lastOpened)||0,
+  deletedAt:0,
+  examId:meta.examId||"",
+  teacherId:meta.teacherId||""
+ });
+ return true
+}
+async function downloadAssets(){
+ if(!currentSyncKey()||!navigator.onLine)return true;
+ const expected=new Set(referencedAssetIds());
+ if(!expected.size)return true;
+ const remote=await remoteAssetManifest();
+ const remoteMap=new Map(remote.map(x=>[x.id,x]));
+ for(const id of expected){
+  const local=await photoGet(id);
+  if(local?.blob&&!local.deletedAt)continue;
+  const meta=remoteMap.get(id);
+  if(meta)await downloadOneAsset(id,meta)
+ }
+ await hydrateMaterialFiles();
+ await renderFileCenter().catch(()=>{});
+ return true
+}
+async function deleteRemoteAsset(id){
+ if(!currentSyncKey()||!navigator.onLine)return false;
+ try{
+  const res=await syncFetch("/files/"+encodeURIComponent(id),{method:"DELETE"});
+  return res.ok||res.status===404
+ }catch{return false}
+}
 async function pushSyncState(){await uploadAssets();const res=await syncFetch("/sync/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({db,appVersion:APP_CONFIG.version})});if(!res.ok)throw new Error("Shranjevanje v oblak ni uspelo ("+res.status+").");const x=await res.json();localStorage.setItem(SYNC_LAST_SERVER,String(x.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));return x}
 async function pullSyncState(server){SYNC_REMOTE_APPLY=true;try{db=server.db;normalizeDb();persist()}finally{SYNC_REMOTE_APPLY=false}await downloadAssets();localStorage.setItem(SYNC_LOCAL_UPDATED,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_SERVER,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));render()}
-async function syncNow({silent=false}={}){if(syncRunning)return;if(!currentSyncKey()){if(!silent)setSyncStatus("Najprej poveži napravo.","Lokalno");return}if(!navigator.onLine){setSyncStatus("Ni internetne povezave. Spremembe bodo ostale lokalno do ponovne povezave.","Brez povezave");return}syncRunning=true;if(!silent)setSyncStatus("Sinhroniziram…","Sinhronizacija");try{const res=await syncFetch("/sync/state");if(res.status===404){await pushSyncState();setSyncStatus("✅ Prva kopija je shranjena v oblak.","Sinhronizirano");return}if(!res.ok)throw new Error("Strežnik je vrnil "+res.status+".");const server=await res.json();const su=Number(server.updatedAt||0),lu=Number(localStorage.getItem(SYNC_LOCAL_UPDATED)||0),ls=Number(localStorage.getItem(SYNC_LAST_SERVER)||0),la=Number(localStorage.getItem(SYNC_LAST_AT)||0);const localDirty=lu>la,serverChanged=su>ls;if(serverChanged&&localDirty){if(su>=lu)await pullSyncState(server);else await pushSyncState()}else if(serverChanged)await pullSyncState(server);else if(localDirty)await pushSyncState();else{await downloadAssets();localStorage.setItem(SYNC_LAST_AT,String(Date.now()))}setSyncStatus("✅ Telefon in računalnik sta usklajena.","Sinhronizirano")}catch(err){console.error("Device sync:",err);setSyncStatus("⚠️ Sinhronizacija ni uspela: "+String(err.message||err),"Napaka")}finally{syncRunning=false}}
+async function syncNow({silent=false}={}){if(syncRunning)return;if(!currentSyncKey()){if(!silent)setSyncStatus("Najprej poveži napravo.","Lokalno");return}if(!navigator.onLine){setSyncStatus("Ni internetne povezave. Spremembe bodo ostale lokalno do ponovne povezave.","Brez povezave");return}syncRunning=true;if(!silent)setSyncStatus("Sinhroniziram…","Sinhronizacija");try{const res=await syncFetch("/sync/state");if(res.status===404){await pushSyncState();setSyncStatus("✅ Prva kopija je shranjena v oblak.","Sinhronizirano");return}if(!res.ok)throw new Error("Strežnik je vrnil "+res.status+".");const server=await res.json();const su=Number(server.updatedAt||0),lu=Number(localStorage.getItem(SYNC_LOCAL_UPDATED)||0),ls=Number(localStorage.getItem(SYNC_LAST_SERVER)||0),la=Number(localStorage.getItem(SYNC_LAST_AT)||0);const localDirty=lu>la,serverChanged=su>ls;if(serverChanged&&localDirty){if(su>=lu)await pullSyncState(server);else await pushSyncState()}else if(serverChanged)await pullSyncState(server);else if(localDirty)await pushSyncState();else{await downloadAssets();localStorage.setItem(SYNC_LAST_AT,String(Date.now()))}setSyncStatus("✅ Podatki in datoteke na telefonu in računalniku so usklajeni.","Sinhronizirano")}catch(err){console.error("Device sync:",err);setSyncStatus("⚠️ Sinhronizacija ni uspela: "+String(err.message||err),"Napaka")}finally{syncRunning=false}}
 function setupDeviceSyncUI(){applyAppVersion();showSyncCode();$("createSyncCode")?.addEventListener("click",async()=>{if(currentSyncKey()&&!confirm("Nova koda bo odklopila to napravo od trenutne sinhronizacije. Nadaljujem?"))return;localStorage.setItem(SYNC_KEY_STORAGE,randomSyncKey());localStorage.setItem(SYNC_LOCAL_UPDATED,String(Date.now()));showSyncCode();await syncNow()});$("enterSyncCode")?.addEventListener("click",async()=>{const c=prompt("Vnesi kodo za sinhronizacijo iz druge naprave:","");if(!c)return;localStorage.setItem(SYNC_KEY_STORAGE,c.trim());showSyncCode();await syncNow()});$("copySyncCodeBtn")?.addEventListener("click",async()=>{const c=currentSyncKey();if(!c)return;try{await navigator.clipboard.writeText(c);toast("Koda kopirana.")}catch{prompt("Kopiraj kodo:",c)}});$("syncNowBtn")?.addEventListener("click",()=>syncNow());window.addEventListener("online",scheduleDeviceSync)}
 
+
+function updateOfflineState(){
+ const online=navigator.onLine;
+ const b=$("offlineState"),info=$("offlineInfo");
+ if(b)b.innerHTML=`<span class="offline-dot ${online?"":"off"}"></span>${online?"Online":"Brez interneta"}`;
+ if(info)info.textContent=online?"Vse je pripravljeno. Če povezava izgine, lahko še naprej uporabljaš lokalne podatke in datoteke.":"📴 Offline način je aktiven. Spremembe ostanejo na napravi in se besedilni podatki sinhronizirajo, ko se internet vrne.";
+}
+function setupOfflineMode(){
+ updateOfflineState();
+ window.addEventListener("online",()=>{updateOfflineState();toast("Internetna povezava je spet na voljo.");scheduleDeviceSync()});
+ window.addEventListener("offline",()=>{updateOfflineState();toast("Offline način: delo se shranjuje lokalno.")});
+ setupFileCenter()
+}
+
 async function initializeApplication(){
- try{setupDeviceSyncUI();if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();setTimeout(()=>syncNow({silent:true}),900);
+ try{setupDeviceSyncUI();setupOfflineMode();if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();setTimeout(()=>syncNow({silent:true}),900);
   checkPushServer(false);queueCloudReminderSync();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
 }
 

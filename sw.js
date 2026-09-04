@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v13-2-sync-stable";
+const CACHE="moj-organizator-v14-1-file-sync";
 const CORE=[
   "./",
   "./index.html",
