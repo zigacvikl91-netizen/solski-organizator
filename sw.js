@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v14-3-ios-files";
+const CACHE="moj-organizator-v14-4-ios-share-fix";
 const CORE=[
   "./",
   "./index.html",

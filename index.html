@@ -1324,7 +1324,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.3",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.4",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1781,6 +1781,7 @@ async function hydrateMaterialPhotos(){for(const el of document.querySelectorAll
 
 
 const DOC_EXTS=new Set(["pdf","doc","docx","ppt","pptx","xls","xlsx"]);
+const FILE_RUNTIME_CACHE=new Map();
 function fileExt(name=""){const p=String(name).toLowerCase().split(".");return p.length>1?p.pop():""}
 function fileKind(r={}){
  const ext=fileExt(r.name||"");
@@ -1822,7 +1823,7 @@ async function addDocumentFiles(files){
 async function renderPendingFiles(){
  const box=$("materialPdfPreview");if(!box)return;box.innerHTML="";
  for(const id of pendingMaterialFiles){
-  const r=await photoGet(id);if(!r||r.deletedAt)continue;
+  const r=await photoGet(id);if(!r||r.deletedAt)continue;FILE_RUNTIME_CACHE.set(id,r);
   const b=document.createElement("button");b.type="button";b.className="asset-btn";b.innerHTML=`<span style="margin-right:6px">${fileIcon(r)}</span><span>${esc(r.name||"Datoteka")}</span>`;b.onclick=()=>openStoredFile(id);
   const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.setAttribute("aria-label","Odstrani datoteko");x.textContent="✕";
   x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);if(!editingOriginalFiles.includes(id))await photoDelete(id);await renderPendingFiles();await renderFileCenter()};
@@ -1830,52 +1831,61 @@ async function renderPendingFiles(){
  }
  $("materialPdfInfo").textContent=pendingMaterialFiles.length?(pendingMaterialFiles.length===1?"1 dokument dodan.":pendingMaterialFiles.length+" dokumentov dodanih."):"Ni dodanih dokumentov."
 }
-async function openStoredFile(id){
- const r=await photoGet(id);if(!r||r.deletedAt)return;
- r.lastOpened=Date.now();await photoPut(r);
+function openStoredFile(id){
+ const r=FILE_RUNTIME_CACHE.get(id);
 
- const name=r.name||"datoteka";
- const type=r.type||r.blob?.type||"application/octet-stream";
- let file;
- try{
-  file=new File([r.blob],name,{type,lastModified:r.created||Date.now()})
- }catch{
-  file=r.blob
- }
+ // iOS Web Share requires transient user activation. Therefore the Share call
+ // must happen immediately from the click, without awaiting IndexedDB first.
+ if(r?.blob && !r.deletedAt){
+  const name=r.name||"datoteka";
+  const type=r.type||r.blob.type||"application/octet-stream";
+  let file;
+  try{file=new File([r.blob],name,{type,lastModified:r.created||Date.now()})}
+  catch{file=null}
 
- // iPhone/iPad/PWA: blob: URL-ji pri Word/PPT/Excel pogosto vrnejo
- // WebKitBlobResource napako. Datoteko zato predamo sistemskemu Share/Files meniju.
- try{
-  if(navigator.share && file instanceof File){
+  if(file && navigator.share){
    const data={files:[file],title:name};
-   if(!navigator.canShare || navigator.canShare(data)){
-    await navigator.share(data);
-    setTimeout(()=>renderFileCenter().catch(()=>{}),50);
+   let can=true;
+   try{if(navigator.canShare)can=navigator.canShare(data)}catch{}
+   if(can){
+    navigator.share(data)
+      .then(async()=>{
+        try{r.lastOpened=Date.now();await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}catch{}
+        renderFileCenter().catch(()=>{})
+      })
+      .catch(err=>{
+        if(err?.name!=="AbortError"){
+          console.warn("Native file share failed:",err);
+          alert("iPhone datoteke ni mogel predati aplikaciji. Poskusi še enkrat ali izberi »Shrani v Datoteke«.")
+        }
+      });
     return
    }
   }
- }catch(err){
-  if(err?.name==="AbortError")return;
-  console.warn("Native file share failed:",err)
+
+  // Desktop / browsers without file sharing.
+  try{
+   const u=URL.createObjectURL(r.blob);
+   const a=document.createElement("a");
+   a.href=u;a.download=name;a.rel="noopener";a.style.display="none";
+   document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(u),120000);
+   r.lastOpened=Date.now();photoPut(r).catch(()=>{});
+   renderFileCenter().catch(()=>{});
+   return
+  }catch(err){
+   console.error(err)
+  }
  }
 
- // Desktop/ostali brskalniki: običajen object URL + download/open.
- try{
-  const u=URL.createObjectURL(r.blob);
-  const a=document.createElement("a");
-  a.href=u;
-  a.download=name;
-  a.rel="noopener";
-  a.style.display="none";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(u),120000)
- }catch(err){
-  console.error("Odpiranje datoteke:",err);
-  alert("Datoteke ni bilo mogoče odpreti. Poskusi jo odpreti prek gumba Deli/Shrani v Datoteke.")
- }
- setTimeout(()=>renderFileCenter().catch(()=>{}),50)
+ // If the record was not yet in memory, load it and ask the user to tap once more.
+ photoGet(id).then(r2=>{
+  if(!r2||r2.deletedAt){alert("Datoteke na tej napravi ni mogoče najti.");return}
+  FILE_RUNTIME_CACHE.set(id,r2);
+  toast("Datoteka je pripravljena. Pritisni »Odpri / deli« še enkrat.")
+ }).catch(()=>{
+  alert("Datoteke ni bilo mogoče pripraviti za odpiranje.")
+ })
 }
 async function hydrateMaterialFiles(){
  for(const el of document.querySelectorAll("[data-material-files]")){
@@ -1939,7 +1949,7 @@ function fileStatusLabel(s){return s==="done"?"Končano":s==="learning"?"Učim s
 async function renderFileCenter(){
  const box=$("fileCenterList");if(!box)return;
  const q=($("fileSearch")?.value||"").trim().toLowerCase(),type=$("fileTypeFilter")?.value||"",view=$("fileViewFilter")?.value||"active";
- let rows=(await allLocalAssets()).filter(r=>r?.blob);
+ let rows=(await allLocalAssets()).filter(r=>r?.blob);rows.forEach(r=>FILE_RUNTIME_CACHE.set(r.id,r));
  if(view==="trash")rows=rows.filter(r=>r.deletedAt);
  else rows=rows.filter(r=>!r.deletedAt);
  // Only show school assets actually attached to a material.
@@ -2160,7 +2170,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.3: iOS file opening fix + D1 + Workers KV file sync =====
+// ===== V14.4: iOS share gesture fix + D1 + Workers KV file sync =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
