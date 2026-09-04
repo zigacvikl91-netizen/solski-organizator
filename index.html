@@ -1237,7 +1237,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V13.1",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V13.2",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1895,7 +1895,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V13.0: sinhronizacija telefon <-> računalnik =====
+// ===== V13.2: stabilna sinhronizacija telefon <-> računalnik =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
