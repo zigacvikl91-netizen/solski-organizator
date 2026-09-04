@@ -970,6 +970,66 @@ body.tutorial-open::after{pointer-events:none!important}
 
 /* V13.0 – verzija + sinhronizacija naprav */
 .app-title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.app-version-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:#eef0ff;color:#4d4fb5;border:1px solid #d9dcff;font-size:12px;font-weight:800;white-space:nowrap}body.dark .app-version-badge{background:#242b41;color:#d8deff;border-color:#3a4461}.sync-card{background:linear-gradient(135deg,#eef9ff,#f7f4ff)!important;border-color:#cfe0f4!important}.sync-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.sync-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.5px}.sync-status{margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.65);font-size:13px}body.dark .sync-card{background:#1b1e28!important;border-color:#34394a!important}body.dark .sync-status{background:#151821;color:#d7dbea;border-color:#3b4154}@media(max-width:520px){.sync-row{grid-template-columns:1fr}.app-title-line{gap:7px}.app-version-badge{font-size:11px;padding:4px 8px}}
+
+/* V14.2 mobile polish */
+.pdf-box,.photo-box{overflow:hidden}
+.asset-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  margin-top:10px
+}
+.asset-row .asset-btn{
+  width:100%;
+  min-width:0;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  border-radius:14px;
+  padding:11px 12px;
+  line-height:1.25
+}
+.asset-row .danger.asset-btn{
+  width:44px;
+  min-width:44px;
+  max-width:44px;
+  height:44px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center
+}
+.file-note{margin-top:8px}
+.pdf-box .storage-note{margin-top:10px}
+#materialForm .photo-box,#materialForm .pdf-box{
+  padding:14px;
+  border-radius:18px
+}
+#materialForm .photo-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px
+}
+#materialForm .photo-action{
+  width:100%;
+  justify-content:center;
+  text-align:center
+}
+@media(max-width:620px){
+  #materialForm .photo-actions{grid-template-columns:1fr}
+  .asset-row{grid-template-columns:minmax(0,1fr) 44px}
+  .asset-row .asset-btn{font-size:15px}
+  .pdf-box,.photo-box{margin-left:0!important;margin-right:0!important}
+}
+@media(max-width:420px){
+  #materialForm .photo-box,#materialForm .pdf-box{padding:12px}
+  .asset-row .asset-btn{font-size:14px;padding:10px}
+  .asset-row .danger.asset-btn{width:42px;min-width:42px;max-width:42px;height:42px}
+}
+
 </style>
 <script>
 /* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
@@ -1264,7 +1324,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.1",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.3",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1763,19 +1823,58 @@ async function renderPendingFiles(){
  const box=$("materialPdfPreview");if(!box)return;box.innerHTML="";
  for(const id of pendingMaterialFiles){
   const r=await photoGet(id);if(!r||r.deletedAt)continue;
-  const b=document.createElement("button");b.type="button";b.className="asset-btn";b.textContent=fileIcon(r)+" "+(r.name||"Datoteka");b.onclick=()=>openStoredFile(id);
-  const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.textContent="×";
+  const b=document.createElement("button");b.type="button";b.className="asset-btn";b.innerHTML=`<span style="margin-right:6px">${fileIcon(r)}</span><span>${esc(r.name||"Datoteka")}</span>`;b.onclick=()=>openStoredFile(id);
+  const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.setAttribute("aria-label","Odstrani datoteko");x.textContent="✕";
   x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);if(!editingOriginalFiles.includes(id))await photoDelete(id);await renderPendingFiles();await renderFileCenter()};
   box.append(b,x)
  }
- $("materialPdfInfo").textContent=pendingMaterialFiles.length?pendingMaterialFiles.length+" dokumentov dodanih.":"Ni dodanih dokumentov."
+ $("materialPdfInfo").textContent=pendingMaterialFiles.length?(pendingMaterialFiles.length===1?"1 dokument dodan.":pendingMaterialFiles.length+" dokumentov dodanih."):"Ni dodanih dokumentov."
 }
 async function openStoredFile(id){
  const r=await photoGet(id);if(!r||r.deletedAt)return;
  r.lastOpened=Date.now();await photoPut(r);
- const u=URL.createObjectURL(r.blob);
- const a=document.createElement("a");a.href=u;a.target="_blank";a.rel="noopener";a.download=r.name||"datoteka";document.body.appendChild(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(u),120000);
+
+ const name=r.name||"datoteka";
+ const type=r.type||r.blob?.type||"application/octet-stream";
+ let file;
+ try{
+  file=new File([r.blob],name,{type,lastModified:r.created||Date.now()})
+ }catch{
+  file=r.blob
+ }
+
+ // iPhone/iPad/PWA: blob: URL-ji pri Word/PPT/Excel pogosto vrnejo
+ // WebKitBlobResource napako. Datoteko zato predamo sistemskemu Share/Files meniju.
+ try{
+  if(navigator.share && file instanceof File){
+   const data={files:[file],title:name};
+   if(!navigator.canShare || navigator.canShare(data)){
+    await navigator.share(data);
+    setTimeout(()=>renderFileCenter().catch(()=>{}),50);
+    return
+   }
+  }
+ }catch(err){
+  if(err?.name==="AbortError")return;
+  console.warn("Native file share failed:",err)
+ }
+
+ // Desktop/ostali brskalniki: običajen object URL + download/open.
+ try{
+  const u=URL.createObjectURL(r.blob);
+  const a=document.createElement("a");
+  a.href=u;
+  a.download=name;
+  a.rel="noopener";
+  a.style.display="none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),120000)
+ }catch(err){
+  console.error("Odpiranje datoteke:",err);
+  alert("Datoteke ni bilo mogoče odpreti. Poskusi jo odpreti prek gumba Deli/Shrani v Datoteke.")
+ }
  setTimeout(()=>renderFileCenter().catch(()=>{}),50)
 }
 async function hydrateMaterialFiles(){
@@ -1865,7 +1964,7 @@ async function renderFileCenter(){
    ${tags?`<div class="file-tags">${tags}</div>`:""}
    ${links?`<div class="file-meta" style="margin-top:7px">${links}</div>`:""}
    <div class="small muted" style="margin-top:8px">${fileStatusLabel(r.status)} · ${Math.max(0,Math.min(100,Number(r.progress)||0))}%</div><div class="file-progress"><i style="width:${Math.max(0,Math.min(100,Number(r.progress)||0))}%"></i></div>
-   <div class="file-actions">${view==="trash"?`<button onclick="restoreFile('${r.id}')">↩️ Obnovi</button><button class="danger" onclick="deleteFileForever('${r.id}')">Trajno izbriši</button>`:`<button onclick="openStoredFile('${r.id}')">Odpri</button><button onclick="toggleFileFavorite('${r.id}')">${r.favorite?"★ Odstrani priljubljeno":"☆ Priljubljeno"}</button><button onclick="toggleFileImportant('${r.id}')">${r.important?"✓ Ni nujno":"❗ Pomembno"}</button><button onclick="editFileMeta('${r.id}')">Oznake / napredek</button><button onclick="linkFile('${r.id}')">Poveži</button><button class="danger" onclick="trashFile('${r.id}')">Koš</button>`}</div>
+   <div class="file-actions">${view==="trash"?`<button onclick="restoreFile('${r.id}')">↩️ Obnovi</button><button class="danger" onclick="deleteFileForever('${r.id}')">Trajno izbriši</button>`:`<button onclick="openStoredFile('${r.id}')">Odpri / deli</button><button onclick="toggleFileFavorite('${r.id}')">${r.favorite?"★ Odstrani priljubljeno":"☆ Priljubljeno"}</button><button onclick="toggleFileImportant('${r.id}')">${r.important?"✓ Ni nujno":"❗ Pomembno"}</button><button onclick="editFileMeta('${r.id}')">Oznake / napredek</button><button onclick="linkFile('${r.id}')">Poveži</button><button class="danger" onclick="trashFile('${r.id}')">Koš</button>`}</div>
   </div>`
  }).join("")
 }
@@ -2061,7 +2160,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.1: offline-first + D1 + Workers KV file sync =====
+// ===== V14.3: iOS file opening fix + D1 + Workers KV file sync =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
