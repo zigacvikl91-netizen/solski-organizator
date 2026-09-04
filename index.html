@@ -945,6 +945,9 @@ body.tutorial-open::after{pointer-events:none!important}
   .tutorial-body{overflow:visible!important}
 }
 
+
+/* V13.0 – verzija + sinhronizacija naprav */
+.app-title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.app-version-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:#eef0ff;color:#4d4fb5;border:1px solid #d9dcff;font-size:12px;font-weight:800;white-space:nowrap}body.dark .app-version-badge{background:#242b41;color:#d8deff;border-color:#3a4461}.sync-card{background:linear-gradient(135deg,#eef9ff,#f7f4ff)!important;border-color:#cfe0f4!important}.sync-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.sync-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.5px}.sync-status{margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.65);font-size:13px}body.dark .sync-card{background:#1b1e28!important;border-color:#34394a!important}body.dark .sync-status{background:#151821;color:#d7dbea;border-color:#3b4154}@media(max-width:520px){.sync-row{grid-template-columns:1fr}.app-title-line{gap:7px}.app-version-badge{font-size:11px;padding:4px 8px}}
 </style>
 <script>
 /* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
@@ -1025,8 +1028,9 @@ setTimeout(function(){
 <div id="lockScreen" class="lock-screen hidden"><div class="lock-box"><div style="font-size:42px">🔐</div><h2>Aplikacija je zaklenjena</h2><p class="muted">Vpiši PIN.</p><input id="unlockPin" type="password" inputmode="numeric" maxlength="8" placeholder="••••"><button id="unlockBtn" class="primary" style="width:100%;margin-top:10px">Odkleni</button><div id="unlockMsg" class="small muted" style="margin-top:8px"></div></div></div>
 <main>
 <section id="home" class="view active">
- <div class="hero"><div><div class="muted">Osebni šolski pomočnik</div><h1>Moj organizator</h1></div><div class="row"><button id="guideBtn">Navodila</button><button id="exportBtn">Varnostna kopija</button></div></div>
+ <div class="hero"><div><div class="muted">Osebni šolski pomočnik</div><div class="app-title-line"><h1>Moj organizator</h1><span class="app-version-badge">Verzija <strong data-app-version></strong></span></div></div><div class="row"><button id="guideBtn">Navodila</button><button id="exportBtn">Varnostna kopija</button></div></div>
  <div id="installHelp" class="card install-note"><h3>Namestitev na iPhone</h3><div class="small">Ko je aplikacija objavljena na HTTPS naslovu: Safari → Deli → Dodaj na začetni zaslon.</div></div>
+ <div class="card sync-card" id="deviceSyncCard"><div class="hero"><div><h3>🔄 Sinhronizacija naprav</h3><div class="small muted">Isti predmeti, snovi, izpiti, ocene, učitelji, zapiski in napredek na telefonu in računalniku. Fotografije in PDF-ji za zdaj ostanejo lokalno na napravi.</div></div><span id="syncDeviceState" class="badge">Lokalno</span></div><div class="sync-row"><button id="createSyncCode" class="primary">Ustvari kodo za povezavo</button><button id="enterSyncCode">Poveži drugo napravo</button></div><div class="sync-row"><button id="syncNowBtn">🔄 Sinhroniziraj zdaj</button><button id="copySyncCodeBtn">📋 Kopiraj kodo</button></div><input id="syncCodeDisplay" class="sync-code" readonly placeholder="Koda se prikaže po povezavi" style="margin-top:10px"><div id="deviceSyncStatus" class="sync-status">Sinhronizacija še ni povezana. Podatki so trenutno samo na tej napravi.</div></div>
  <div class="stats">
   <div class="card stat"><b id="sSubjects">0</b><small>predmetov</small></div>
   <div class="card stat"><b id="sPending">0</b><small>za učenje</small></div>
@@ -1233,6 +1237,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
+const APP_CONFIG={version:"V13.1",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1275,7 +1280,7 @@ let flashIndex=0,flashAnswer=false,quizIndex=0,quizAnswered=false;
 const $=id=>document.getElementById(id);
 let toastTimer=null;
 function toast(msg){const el=$("appToast");if(!el)return;el.textContent=msg;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2200)}
-function persist(){normalizeDb();try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(err){console.error("Shranjevanje ni uspelo:",err);toast("Shranjevanje ni uspelo. Preveri prostor v brskalniku.");return false}}
+function persist(){normalizeDb();try{localStorage.setItem(KEY,JSON.stringify(db));if(!SYNC_REMOTE_APPLY)markSyncDirty();return true}catch(err){console.error("Shranjevanje ni uspelo:",err);toast("Shranjevanje ni uspelo. Preveri prostor v brskalniku.");return false}}
 function safeRenderPart(name,fn){try{fn()}catch(err){console.error("Napaka pri prikazu "+name+":",err)}}
 const save=()=>{persist();render();queueCloudReminderSync()};
 function askConfirm(title,text,okLabel="Izbriši"){
@@ -1889,8 +1894,27 @@ function resetTeacherForm(){const f=$("teacherForm");f.reset();$("teacherId").va
 function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||document.getElementById(saveId+"Cancel"))return;const b=document.createElement("button");b.type="button";b.id=saveId+"Cancel";b.className="form-cancel hidden-edit";b.textContent="Prekliči urejanje";b.onclick=async()=>{await fn();toast("Urejanje je preklicano.")};saveBtn.insertAdjacentElement("afterend",b)}
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
+
+// ===== V13.0: sinhronizacija telefon <-> računalnik =====
+const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
+function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
+function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
+function setSyncStatus(text,state=""){const el=$("deviceSyncStatus");if(el)el.textContent=text;const b=$("syncDeviceState");if(b)b.textContent=state||(currentSyncKey()?"Povezano":"Lokalno")}
+function showSyncCode(){const c=currentSyncKey();if($("syncCodeDisplay"))$("syncCodeDisplay").value=c;if($("copySyncCodeBtn"))$("copySyncCodeBtn").disabled=!c;if($("syncNowBtn"))$("syncNowBtn").disabled=!c;setSyncStatus(c?"Naprava je povezana. Spremembe se sinhronizirajo, ko je internet na voljo.":"Sinhronizacija še ni povezana. Podatki so trenutno samo na tej napravi.",c?"Povezano":"Lokalno")}
+function randomSyncKey(){const a=new Uint8Array(24);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")}
+function markSyncDirty(){try{localStorage.setItem(SYNC_LOCAL_UPDATED,String(Date.now()))}catch{}scheduleDeviceSync()}
+function scheduleDeviceSync(){if(!currentSyncKey()||!navigator.onLine)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow({silent:true}).catch(()=>{}),1800)}
+async function syncFetch(path,opts={}){const k=currentSyncKey();if(!k)throw new Error("Sinhronizacija ni povezana.");const h=new Headers(opts.headers||{});h.set("X-Sync-Key",k);return fetch(APP_CONFIG.syncServer+path,{...opts,headers:h})}
+function referencedAssetIds(){return [...new Set(db.materials.flatMap(m=>[...(m.photos||[]),...(m.attachments||[])]).filter(Boolean))]}
+async function uploadAssets(){return true}
+async function downloadAssets(){return true}
+async function pushSyncState(){await uploadAssets();const res=await syncFetch("/sync/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({db,appVersion:APP_CONFIG.version})});if(!res.ok)throw new Error("Shranjevanje v oblak ni uspelo ("+res.status+").");const x=await res.json();localStorage.setItem(SYNC_LAST_SERVER,String(x.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));return x}
+async function pullSyncState(server){SYNC_REMOTE_APPLY=true;try{db=server.db;normalizeDb();persist()}finally{SYNC_REMOTE_APPLY=false}await downloadAssets();localStorage.setItem(SYNC_LOCAL_UPDATED,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_SERVER,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));render()}
+async function syncNow({silent=false}={}){if(syncRunning)return;if(!currentSyncKey()){if(!silent)setSyncStatus("Najprej poveži napravo.","Lokalno");return}if(!navigator.onLine){setSyncStatus("Ni internetne povezave. Spremembe bodo ostale lokalno do ponovne povezave.","Brez povezave");return}syncRunning=true;if(!silent)setSyncStatus("Sinhroniziram…","Sinhronizacija");try{const res=await syncFetch("/sync/state");if(res.status===404){await pushSyncState();setSyncStatus("✅ Prva kopija je shranjena v oblak.","Sinhronizirano");return}if(!res.ok)throw new Error("Strežnik je vrnil "+res.status+".");const server=await res.json();const su=Number(server.updatedAt||0),lu=Number(localStorage.getItem(SYNC_LOCAL_UPDATED)||0),ls=Number(localStorage.getItem(SYNC_LAST_SERVER)||0),la=Number(localStorage.getItem(SYNC_LAST_AT)||0);const localDirty=lu>la,serverChanged=su>ls;if(serverChanged&&localDirty){if(su>=lu)await pullSyncState(server);else await pushSyncState()}else if(serverChanged)await pullSyncState(server);else if(localDirty)await pushSyncState();else{await downloadAssets();localStorage.setItem(SYNC_LAST_AT,String(Date.now()))}setSyncStatus("✅ Telefon in računalnik sta usklajena.","Sinhronizirano")}catch(err){console.error("Device sync:",err);setSyncStatus("⚠️ Sinhronizacija ni uspela: "+String(err.message||err),"Napaka")}finally{syncRunning=false}}
+function setupDeviceSyncUI(){applyAppVersion();showSyncCode();$("createSyncCode")?.addEventListener("click",async()=>{if(currentSyncKey()&&!confirm("Nova koda bo odklopila to napravo od trenutne sinhronizacije. Nadaljujem?"))return;localStorage.setItem(SYNC_KEY_STORAGE,randomSyncKey());localStorage.setItem(SYNC_LOCAL_UPDATED,String(Date.now()));showSyncCode();await syncNow()});$("enterSyncCode")?.addEventListener("click",async()=>{const c=prompt("Vnesi kodo za sinhronizacijo iz druge naprave:","");if(!c)return;localStorage.setItem(SYNC_KEY_STORAGE,c.trim());showSyncCode();await syncNow()});$("copySyncCodeBtn")?.addEventListener("click",async()=>{const c=currentSyncKey();if(!c)return;try{await navigator.clipboard.writeText(c);toast("Koda kopirana.")}catch{prompt("Kopiraj kodo:",c)}});$("syncNowBtn")?.addEventListener("click",()=>syncNow());window.addEventListener("online",scheduleDeviceSync)}
+
 async function initializeApplication(){
- try{if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();
+ try{setupDeviceSyncUI();if("serviceWorker" in navigator)await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(err=>console.warn("Service Worker:",err));restorePushSubscriptionView();render();renderNotificationStatus();renderNotificationCenter();scheduleForegroundReminderCheck();setTimeout(()=>syncNow({silent:true}),900);
   checkPushServer(false);queueCloudReminderSync();if($("gradeDate")&&!$("gradeDate").value)$("gradeDate").value=localDateKey();if(!localStorage.getItem(GUIDE_KEY))openGuide()}catch(err){console.error("Inicializacija aplikacije:",err);toast("Aplikacija je naletela na napako pri zagonu. Zaženi diagnostiko.")}
 }
 
