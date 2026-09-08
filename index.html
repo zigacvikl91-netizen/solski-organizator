@@ -1324,7 +1324,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.7",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.8",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],fileTrash:{},notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1774,7 +1774,7 @@ async function photoGet(id){const d=await openPhotoDB();return new Promise((res,
 async function photoDelete(id){const d=await openPhotoDB();return new Promise(res=>{const t=d.transaction(PHOTO_STORE,"readwrite");t.objectStore(PHOTO_STORE).delete(id);t.oncomplete=res})}
 function compressPhoto(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const max=1800,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));const ctx=c.getContext("2d");if(!ctx){URL.revokeObjectURL(u);rej(new Error("Canvas ni na voljo."));return}ctx.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej(new Error("Slike ni bilo mogoče obdelati."))},"image/jpeg",.82)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("Slike ni bilo mogoče odpreti."))};im.src=u})}
 async function addPhotoFiles(files){for(const f of [...files].filter(f=>f.type.startsWith("image/")).slice(0,20-pendingMaterialPhotos.length)){try{const id=uid(),blob=await compressPhoto(f);await photoPut({id,blob,name:f.name||"Fotografija.jpg",type:"image/jpeg",size:blob.size||0,created:Date.now(),tags:[],note:"",favorite:false,status:"new",progress:0,important:false,lastOpened:0,deletedAt:0,examId:"",teacherId:""});pendingMaterialPhotos.push(id)}catch{}}renderPendingPhotos()}
-async function renderPendingPhotos(){const b=$("materialPhotoPreview");if(!b)return;b.innerHTML="";for(const id of pendingMaterialPhotos){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),d=document.createElement("div");d.className="photo-thumb";d.innerHTML='<img alt="Gradivo"><button type="button">×</button>';d.querySelector("img").src=u;d.querySelector("img").onload=()=>URL.revokeObjectURL(u);d.querySelector("button").onclick=async()=>{pendingMaterialPhotos=pendingMaterialPhotos.filter(x=>x!==id);if(!editingOriginalPhotos.includes(id))await photoDelete(id);renderPendingPhotos()};b.appendChild(d)}$("materialPhotoInfo").textContent=pendingMaterialPhotos.length?pendingMaterialPhotos.length+" fotografij dodanih.":"Ni dodanih fotografij."}
+async function renderPendingPhotos(){const b=$("materialPhotoPreview");if(!b)return;b.innerHTML="";for(const id of pendingMaterialPhotos){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),d=document.createElement("div");d.className="photo-thumb";d.innerHTML='<img alt="Gradivo"><button type="button">×</button>';d.querySelector("img").src=u;d.querySelector("img").onload=()=>URL.revokeObjectURL(u);d.querySelector("button").onclick=async()=>{pendingMaterialPhotos=pendingMaterialPhotos.filter(x=>x!==id);await moveAssetToTrash(id);await renderPendingPhotos();await renderFileCenter().catch(()=>{})};b.appendChild(d)}$("materialPhotoInfo").textContent=pendingMaterialPhotos.length?pendingMaterialPhotos.length+" fotografij dodanih.":"Ni dodanih fotografij."}
 async function openStoredPhoto(id){const r=await photoGet(id);if(!r)return;const u=URL.createObjectURL(r.blob);$("photoViewerImg").src=u;$("photoViewer").dataset.url=u;$("photoViewer").classList.remove("hidden")}
 function closePhotoViewer(){const u=$("photoViewer").dataset.url;if(u)URL.revokeObjectURL(u);$("photoViewer").classList.add("hidden");$("photoViewerImg").src="";$("photoViewer").dataset.url=""}
 async function hydrateMaterialPhotos(){for(const el of document.querySelectorAll("[data-material-photos]")){el.innerHTML="";const m=db.materials.find(x=>x.id===el.dataset.materialPhotos);for(const id of (m?.photos||[])){const r=await photoGet(id);if(!r)continue;const u=URL.createObjectURL(r.blob),b=document.createElement("button");b.type="button";b.innerHTML='<img alt="Fotografija gradiva">';b.querySelector("img").src=u;b.querySelector("img").onload=()=>URL.revokeObjectURL(u);b.onclick=()=>openStoredPhoto(id);el.appendChild(b)}}}
@@ -1826,7 +1826,7 @@ async function renderPendingFiles(){
   const r=await photoGet(id);if(!r||r.deletedAt)continue;FILE_RUNTIME_CACHE.set(id,r);
   const b=document.createElement("button");b.type="button";b.className="asset-btn";b.innerHTML=`<span style="margin-right:6px">${fileIcon(r)}</span><span>${esc(r.name||"Datoteka")}</span>`;b.onclick=()=>openStoredFile(id);
   const x=document.createElement("button");x.type="button";x.className="danger asset-btn";x.setAttribute("aria-label","Odstrani datoteko");x.textContent="✕";
-  x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);if(!editingOriginalFiles.includes(id))await photoDelete(id);await renderPendingFiles();await renderFileCenter()};
+  x.onclick=async()=>{pendingMaterialFiles=pendingMaterialFiles.filter(v=>v!==id);await moveAssetToTrash(id);await renderPendingFiles();await renderFileCenter()};
   box.append(b,x)
  }
  $("materialPdfInfo").textContent=pendingMaterialFiles.length?(pendingMaterialFiles.length===1?"1 dokument dodan.":pendingMaterialFiles.length+" dokumentov dodanih."):"Ni dodanih dokumentov."
@@ -1928,13 +1928,29 @@ async function patchAsset(id,patch){
  const r=await photoGet(id);if(!r)return;
  Object.assign(r,patch);await photoPut(r);await renderFileCenter();await hydrateMaterialFiles()
 }
+
+async function moveAssetToTrash(id){
+ const ts=Date.now();
+ db.fileTrash??={};
+ db.fileTrash[id]=ts;
+ const r=await photoGet(id);
+ if(r){
+  r.deletedAt=ts;
+  await photoPut(r);
+  FILE_RUNTIME_CACHE.set(id,r)
+ }
+ persist();
+ await renderFileCenter().catch(()=>{});
+ await hydrateMaterialFiles().catch(()=>{});
+ return true
+}
+
 window.toggleFileFavorite=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{favorite:!r.favorite})};
 window.toggleFileImportant=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{important:!r.important})};
 window.trashFile=async id=>{
  if(!confirm("Premaknem datoteko v koš?"))return;
- const ts=Date.now();db.fileTrash??={};db.fileTrash[id]=ts;
- const r=await photoGet(id);if(r){r.deletedAt=ts;await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}
- persist();await renderFileCenter();await hydrateMaterialFiles();toast("Datoteka je v košu.")
+ await moveAssetToTrash(id);
+ toast("Datoteka je v košu.")
 };
 window.restoreFile=async id=>{
  db.fileTrash??={};delete db.fileTrash[id];
@@ -1986,8 +2002,8 @@ async function renderFileCenter(){
  rows.forEach(r=>{r.deletedAt=Number(db.fileTrash[r.id]||0)});
  if(view==="trash")rows=rows.filter(r=>!!db.fileTrash[r.id]);
  else rows=rows.filter(r=>!db.fileTrash[r.id]);
- // Only show school assets actually attached to a material.
- rows=rows.filter(r=>materialForAsset(r.id));
+ // Koš mora prikazati tudi datoteke/slike, ki so bile izbrisane še preden
+ // je bilo gradivo shranjeno. Aktivni prikaz zato vključuje vse lokalne šolske datoteke.
  if(view==="favorites")rows=rows.filter(r=>r.favorite);
  if(view==="recent")rows=rows.filter(r=>r.lastOpened).sort((a,b)=>(b.lastOpened||0)-(a.lastOpened||0)).slice(0,20);
  else rows.sort((a,b)=>(b.important?1:0)-(a.important?1:0)||(b.favorite?1:0)-(a.favorite?1:0)||(b.created||0)-(a.created||0));
@@ -1997,13 +2013,13 @@ async function renderFileCenter(){
   return [r.name,r.note,(r.tags||[]).join(" "),m?.title,subjectName(m?.subject||"")].join(" ").toLowerCase().includes(q)
  });
  if($("fileCountBadge"))$("fileCountBadge").textContent=String(rows.length);
- if(!rows.length){box.innerHTML='<div class="empty">Ni datotek za ta prikaz.</div>';return}
+ if(!rows.length){box.innerHTML=`<div class="empty">${view==="trash"?"Koš je trenutno prazen.":"Ni datotek za ta prikaz."}</div>`;return}
  box.innerHTML=rows.map(r=>{
   const m=materialForAsset(r.id),teacher=db.teachers.find(t=>t.id===r.teacherId),exam=db.exams.find(e=>e.id===r.examId);
   const created=r.created?new Date(r.created).toLocaleDateString("sl-SI"):"";
   const tags=(r.tags||[]).map(t=>`<span class="file-tag">${esc(t)}</span>`).join("");
   const links=[teacher?"👩‍🏫 "+esc(teacher.name):"",exam?"🗓️ "+esc(exam.date):""].filter(Boolean).join(" · ");
-  return `<div class="file-card"><div class="file-card-head"><div style="display:flex;gap:10px;min-width:0"><div class="file-icon">${fileIcon(r)}</div><div style="min-width:0"><div class="file-title">${esc(r.name||"Datoteka")}</div><div class="file-meta">${fileKindLabel(r)} · ${formatBytes(r.size||r.blob?.size||0)} · ${esc(created)}${m?" · "+esc(subjectName(m.subject))+" → "+esc(m.title):""}</div></div></div><div>${r.favorite?"⭐":""}${r.important?"❗":""}</div></div>
+  return `<div class="file-card"><div class="file-card-head"><div style="display:flex;gap:10px;min-width:0"><div class="file-icon">${fileIcon(r)}</div><div style="min-width:0"><div class="file-title">${esc(r.name||"Datoteka")}</div><div class="file-meta">${fileKindLabel(r)} · ${formatBytes(r.size||r.blob?.size||0)} · ${esc(created)}${m?" · "+esc(subjectName(m.subject))+" → "+esc(m.title):" · Brez pripetega gradiva"}</div></div></div><div>${r.favorite?"⭐":""}${r.important?"❗":""}</div></div>
    ${r.note?`<div class="small" style="margin-top:7px">${esc(r.note)}</div>`:""}
    ${tags?`<div class="file-tags">${tags}</div>`:""}
    ${links?`<div class="file-meta" style="margin-top:7px">${links}</div>`:""}
@@ -2200,7 +2216,7 @@ $("guideBtn").onclick=openGuide;$("guideStart").onclick=closeGuide;$("repeatTuto
 
 function setEditMode(saveId,editing){const b=$(saveId+"Cancel");if(b)b.classList.toggle("hidden-edit",!editing)}
 function resetSubjectForm(){const f=$("subjectForm");f.reset();$("subjectId").value="";$("subjectSaveBtn").textContent="Dodaj predmet";setEditMode("subjectSaveBtn",false)}
-async function resetMaterialForm(){const uncommitted=[...pendingMaterialPhotos.filter(x=>!editingOriginalPhotos.includes(x)),...pendingMaterialFiles.filter(x=>!editingOriginalFiles.includes(x))];for(const id of uncommitted){try{await photoDelete(id)}catch{}}const f=$("materialForm");f.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];await renderPendingPhotos();await renderPendingFiles();setEditMode("materialSaveBtn",false)}
+async function resetMaterialForm(){const uncommitted=[...pendingMaterialPhotos.filter(x=>!editingOriginalPhotos.includes(x)),...pendingMaterialFiles.filter(x=>!editingOriginalFiles.includes(x))];for(const id of uncommitted){try{await moveAssetToTrash(id)}catch{}}const f=$("materialForm");f.reset();$("materialId").value="";$("materialSaveBtn").textContent="Razvrsti in dodaj";$("newSubjectWrap").classList.add("hidden");$("materialNewSubject").value="";$("toggleNewSubject").textContent="+ Dodaj nov predmet tukaj";pendingMaterialPhotos=[];editingOriginalPhotos=[];pendingMaterialFiles=[];editingOriginalFiles=[];await renderPendingPhotos();await renderPendingFiles();setEditMode("materialSaveBtn",false)}
 function resetExamForm(){const f=$("examForm");f.reset();$("examId").value="";$("examSaveBtn").textContent="Dodaj izpit";setEditMode("examSaveBtn",false)}
 function resetGradeForm(){const f=$("gradeForm");f.reset();$("gradeId").value="";$("gradeSaveBtn").textContent="Shrani oceno";$("gradeDate").value=localDateKey();setEditMode("gradeSaveBtn",false)}
 function resetTeacherForm(){const f=$("teacherForm");f.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";setEditMode("teacherSaveBtn",false)}
@@ -2208,7 +2224,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.7: popravljeno odpiranje Office datotek + zanesljiv sinhroniziran Koš =====
+// ===== V14.8: popravljeno dejansko premikanje v Koš + obnovitev vseh datotek =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
