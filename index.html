@@ -1324,9 +1324,9 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.6",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.7",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
-const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],notificationSettings:{enabled:false}};
+const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],fileTrash:{},notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
 function loadDbSafe(){
  let raw=null;
@@ -1344,7 +1344,7 @@ function normalizeDb(){
  db.studySettings.dailyMinutes=Math.max(30,Number(db.studySettings.dailyMinutes)||180);
  db.studySettings.blockMinutes=Math.max(15,Number(db.studySettings.blockMinutes)||45);
  db.dayOverrides=(db.dayOverrides&&typeof db.dayOverrides==="object")?db.dayOverrides:{};
- db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};
+ db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};db.fileTrash=(db.fileTrash&&typeof db.fileTrash==="object"&&!Array.isArray(db.fileTrash))?db.fileTrash:{};
  const seen=new Set();
  db.subjects=db.subjects.filter(s=>s&&typeof s==="object").map(s=>{if(!s.id||seen.has(String(s.id)))s.id=mk();s.id=String(s.id);seen.add(s.id);s.name=String(s.name||"Neimenovan predmet");s.desc=String(s.desc||"");s.target=String(s.target||"");s.completed=!!s.completed;return s});
  const valid=new Set(db.subjects.map(s=>s.id));
@@ -1845,12 +1845,13 @@ function openStoredFile(id){
    }
    const data=await res.json();
    if(!data?.url)throw new Error("Manjka povezava za odpiranje.");
-   if(popup)popup.location.href=data.url;
+   if(popup)popup.location.replace(data.url);
    else window.location.href=data.url;
 
    if(r){
     r.lastOpened=Date.now();
     photoPut(r).catch(()=>{});
+    FILE_RUNTIME_CACHE.set(id,r);
     renderFileCenter().catch(()=>{})
    }
   }catch(err){
@@ -1860,10 +1861,10 @@ function openStoredFile(id){
   }
  };
 
- // Če datoteka še ni v runtime cache, jo samo pripravimo za prikaz metapodatkov,
- // samo odpiranje pa gre prek varnega Worker URL-ja.
- if(!r){
-  photoGet(id).then(r2=>{if(r2)FILE_RUNTIME_CACHE.set(id,r2)}).catch(()=>{})
+ if(!navigator.onLine){
+  try{if(popup)popup.close()}catch{}
+  alert("Za neposredno odpiranje dokumenta potrebuješ internet. Lokalna kopija ostane shranjena za offline uporabo.");
+  return
  }
  doOpen()
 }
@@ -1929,13 +1930,24 @@ async function patchAsset(id,patch){
 }
 window.toggleFileFavorite=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{favorite:!r.favorite})};
 window.toggleFileImportant=async id=>{const r=await photoGet(id);if(r)await patchAsset(id,{important:!r.important})};
-window.trashFile=async id=>{if(!confirm("Premaknem datoteko v koš?"))return;await patchAsset(id,{deletedAt:Date.now()});toast("Datoteka je v košu.")};
-window.restoreFile=async id=>{await patchAsset(id,{deletedAt:0});toast("Datoteka je obnovljena.")};
+window.trashFile=async id=>{
+ if(!confirm("Premaknem datoteko v koš?"))return;
+ const ts=Date.now();db.fileTrash??={};db.fileTrash[id]=ts;
+ const r=await photoGet(id);if(r){r.deletedAt=ts;await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}
+ persist();await renderFileCenter();await hydrateMaterialFiles();toast("Datoteka je v košu.")
+};
+window.restoreFile=async id=>{
+ db.fileTrash??={};delete db.fileTrash[id];
+ const r=await photoGet(id);if(r){r.deletedAt=0;await photoPut(r);FILE_RUNTIME_CACHE.set(id,r)}
+ persist();await renderFileCenter();await hydrateMaterialFiles();toast("Datoteka je obnovljena.")
+};
 window.deleteFileForever=async id=>{
  if(!confirm("Datoteko trajno izbrišem iz te naprave? Tega ni mogoče razveljaviti."))return;
  await photoDelete(id);
  await deleteRemoteAsset(id);
+ db.fileTrash??={};delete db.fileTrash[id];
  db.materials.forEach(m=>{m.attachments=(m.attachments||[]).filter(x=>x!==id);m.photos=(m.photos||[]).filter(x=>x!==id)});
+ FILE_RUNTIME_CACHE.delete(id);
  persist();render();toast("Datoteka je trajno izbrisana.")
 };
 window.editFileMeta=async id=>{
@@ -1970,8 +1982,10 @@ async function renderFileCenter(){
  const box=$("fileCenterList");if(!box)return;
  const q=($("fileSearch")?.value||"").trim().toLowerCase(),type=$("fileTypeFilter")?.value||"",view=$("fileViewFilter")?.value||"active";
  let rows=(await allLocalAssets()).filter(r=>r?.blob);rows.forEach(r=>FILE_RUNTIME_CACHE.set(r.id,r));
- if(view==="trash")rows=rows.filter(r=>r.deletedAt);
- else rows=rows.filter(r=>!r.deletedAt);
+ db.fileTrash??={};
+ rows.forEach(r=>{r.deletedAt=Number(db.fileTrash[r.id]||0)});
+ if(view==="trash")rows=rows.filter(r=>!!db.fileTrash[r.id]);
+ else rows=rows.filter(r=>!db.fileTrash[r.id]);
  // Only show school assets actually attached to a material.
  rows=rows.filter(r=>materialForAsset(r.id));
  if(view==="favorites")rows=rows.filter(r=>r.favorite);
@@ -2015,7 +2029,7 @@ async function exportFullBackup(){
 }
 async function importFullBackup(file){
  const pack=JSON.parse(await file.text()),x=pack.db||pack;if(!Array.isArray(x.subjects)||!Array.isArray(x.materials)||!Array.isArray(x.exams)||!Array.isArray(x.teachers))throw new Error("bad");
- x.grades??=[];x.studySettings??={defaultTime:"17:00",dailyMinutes:180,blockMinutes:45};x.dayOverrides??={};x.studySlots??=[];x.questions??=[];x.studySessions??=[];x.freeDays??=[];x.quickNotes??=[];x.mockHistory??=[];
+ x.grades??=[];x.fileTrash??={};x.studySettings??={defaultTime:"17:00",dailyMinutes:180,blockMinutes:45};x.dayOverrides??={};x.studySlots??=[];x.questions??=[];x.studySessions??=[];x.freeDays??=[];x.quickNotes??=[];x.mockHistory??=[];
  x.materials.forEach(m=>{m.photos??=[];m.attachments??=[];m.minutes??=45;m.status??=(m.done?"done":(m.mastery>0?"learning":"received"));m.nextReview??=null});
  for(const a of (pack.assets||[])){if(a.data)await photoPut({id:a.id,name:a.name||"",type:a.type||"",size:a.size||0,created:a.created||Date.now(),tags:a.tags||[],note:a.note||"",favorite:!!a.favorite,status:a.status||"new",progress:Number(a.progress)||0,important:!!a.important,lastOpened:Number(a.lastOpened)||0,deletedAt:Number(a.deletedAt)||0,examId:a.examId||"",teacherId:a.teacherId||"",blob:dataURLToBlob(a.data)})}
  db=x;normalizeDb();save()
@@ -2194,7 +2208,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.6: viden Koš + ločen Odpri in Deli =====
+// ===== V14.7: popravljeno odpiranje Office datotek + zanesljiv sinhroniziran Koš =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
@@ -2280,8 +2294,9 @@ async function downloadAssets(){
  const remote=await remoteAssetManifest();
  const remoteMap=new Map(remote.map(x=>[x.id,x]));
  for(const id of expected){
+  if(db.fileTrash?.[id])continue;
   const local=await photoGet(id);
-  if(local?.blob&&!local.deletedAt)continue;
+  if(local?.blob)continue;
   const meta=remoteMap.get(id);
   if(meta)await downloadOneAsset(id,meta)
  }
@@ -2297,7 +2312,22 @@ async function deleteRemoteAsset(id){
  }catch{return false}
 }
 async function pushSyncState(){await uploadAssets();const res=await syncFetch("/sync/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({db,appVersion:APP_CONFIG.version})});if(!res.ok)throw new Error("Shranjevanje v oblak ni uspelo ("+res.status+").");const x=await res.json();localStorage.setItem(SYNC_LAST_SERVER,String(x.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));return x}
-async function pullSyncState(server){SYNC_REMOTE_APPLY=true;try{db=server.db;normalizeDb();persist()}finally{SYNC_REMOTE_APPLY=false}await downloadAssets();localStorage.setItem(SYNC_LOCAL_UPDATED,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_SERVER,String(server.updatedAt||Date.now()));localStorage.setItem(SYNC_LAST_AT,String(Date.now()));render()}
+async function pullSyncState(server){
+ SYNC_REMOTE_APPLY=true;
+ try{db=server.db;normalizeDb();persist()}finally{SYNC_REMOTE_APPLY=false}
+ try{
+  const assets=await allLocalAssets(),trash=db.fileTrash||{};
+  for(const r of assets){
+   const d=Number(trash[r.id]||0);
+   if(Number(r.deletedAt||0)!==d){r.deletedAt=d;await photoPut(r);FILE_RUNTIME_CACHE.set(r.id,r)}
+  }
+ }catch(err){console.warn("Koš sync:",err)}
+ await downloadAssets();
+ localStorage.setItem(SYNC_LOCAL_UPDATED,String(server.updatedAt||Date.now()));
+ localStorage.setItem(SYNC_LAST_SERVER,String(server.updatedAt||Date.now()));
+ localStorage.setItem(SYNC_LAST_AT,String(Date.now()));
+ render()
+}
 async function syncNow({silent=false}={}){if(syncRunning)return;if(!currentSyncKey()){if(!silent)setSyncStatus("Najprej poveži napravo.","Lokalno");return}if(!navigator.onLine){setSyncStatus("Ni internetne povezave. Spremembe bodo ostale lokalno do ponovne povezave.","Brez povezave");return}syncRunning=true;if(!silent)setSyncStatus("Sinhroniziram…","Sinhronizacija");try{const res=await syncFetch("/sync/state");if(res.status===404){await pushSyncState();setSyncStatus("✅ Prva kopija je shranjena v oblak.","Sinhronizirano");return}if(!res.ok)throw new Error("Strežnik je vrnil "+res.status+".");const server=await res.json();const su=Number(server.updatedAt||0),lu=Number(localStorage.getItem(SYNC_LOCAL_UPDATED)||0),ls=Number(localStorage.getItem(SYNC_LAST_SERVER)||0),la=Number(localStorage.getItem(SYNC_LAST_AT)||0);const localDirty=lu>la,serverChanged=su>ls;if(serverChanged&&localDirty){if(su>=lu)await pullSyncState(server);else await pushSyncState()}else if(serverChanged)await pullSyncState(server);else if(localDirty)await pushSyncState();else{await downloadAssets();localStorage.setItem(SYNC_LAST_AT,String(Date.now()))}setSyncStatus("✅ Podatki in datoteke na telefonu in računalniku so usklajeni.","Sinhronizirano")}catch(err){console.error("Device sync:",err);setSyncStatus("⚠️ Sinhronizacija ni uspela: "+String(err.message||err),"Napaka")}finally{syncRunning=false}}
 function setupDeviceSyncUI(){applyAppVersion();showSyncCode();$("createSyncCode")?.addEventListener("click",async()=>{if(currentSyncKey()&&!confirm("Nova koda bo odklopila to napravo od trenutne sinhronizacije. Nadaljujem?"))return;localStorage.setItem(SYNC_KEY_STORAGE,randomSyncKey());localStorage.setItem(SYNC_LOCAL_UPDATED,String(Date.now()));showSyncCode();await syncNow()});$("enterSyncCode")?.addEventListener("click",async()=>{const c=prompt("Vnesi kodo za sinhronizacijo iz druge naprave:","");if(!c)return;localStorage.setItem(SYNC_KEY_STORAGE,c.trim());showSyncCode();await syncNow()});$("copySyncCodeBtn")?.addEventListener("click",async()=>{const c=currentSyncKey();if(!c)return;try{await navigator.clipboard.writeText(c);toast("Koda kopirana.")}catch{prompt("Kopiraj kodo:",c)}});$("syncNowBtn")?.addEventListener("click",()=>syncNow());window.addEventListener("online",scheduleDeviceSync)}
 
