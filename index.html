@@ -1030,6 +1030,24 @@ body.tutorial-open::after{pointer-events:none!important}
   .asset-row .danger.asset-btn{width:42px;min-width:42px;max-width:42px;height:42px}
 }
 
+
+/* V14.13 – glasno branje */
+.speech-row{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0}
+.speech-row button{min-height:40px;flex:1;min-width:145px}
+.speech-note{font-size:12px;color:var(--muted);margin-top:6px}
+.speech-speaking{outline:2px solid var(--accent)!important}
+@media(max-width:520px){.speech-row{display:grid;grid-template-columns:1fr}.speech-row button{width:100%}}
+
+
+/* V14.14 – glasovni odgovori */
+.voice-answer-box{margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+.voice-answer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.voice-answer-actions button{flex:1;min-width:145px}
+.voice-heard{margin-top:8px;font-size:14px;white-space:pre-wrap}
+.voice-result{margin-top:8px;font-weight:800}
+.voice-listening{outline:2px solid var(--accent)!important}
+@media(max-width:520px){.voice-answer-actions{display:grid;grid-template-columns:1fr}.voice-answer-actions button{width:100%}}
+
 </style>
 <script>
 /* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
@@ -1198,10 +1216,10 @@ setTimeout(function(){
  <div id="materialList"></div>
 
  <div class="card"><h3>❓ Vprašanja za profesorja</h3><form id="questionForm"><label>Predmet<select id="questionSubject"></select></label><label>Vprašanje<input id="questionText" placeholder="Kaj mi ni jasno?"></label><button class="primary">Dodaj vprašanje</button></form><div id="questionList"></div></div>
- <div class="card"><h3>Flashcards</h3><div id="flashEmpty" class="muted">Dodaj snov, nato lahko vadiš kartice.</div><div id="flashBox" class="hidden"><div id="flashCard" class="flash"></div><div class="row"><button id="flipCard">Pokaži odgovor</button><button id="nextCard" class="primary">Naslednja</button></div></div></div>
+ <div class="card"><h3>Flashcards</h3><div id="flashEmpty" class="muted">Dodaj snov, nato lahko vadiš kartice.</div><div id="flashBox" class="hidden"><div id="flashCard" class="flash"></div><div class="speech-row"><button id="speakFlash">🔊 Preberi</button><button id="stopSpeech">⏹️ Ustavi glas</button></div><div class="row"><button id="flipCard">Pokaži odgovor</button><button id="nextCard" class="primary">Naslednja</button></div></div></div>
 
  <div class="card"><h3>🧪 Poskusni izpit</h3><div class="grid"><label>Predmet<select id="mockSubject"></select></label><label>Število vprašanj<select id="mockCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label></div><button id="startMock" class="primary">Začni poskusni izpit</button><div id="mockExam"></div></div>
- <div class="card"><h3>Kviz</h3><div id="quizEmpty" class="muted">Za kviz dodaj vsaj eno snov z nekaj besedila.</div><div id="quizBox" class="hidden"><div id="quizQuestion" style="font-weight:700;margin-bottom:10px"></div><div id="quizChoices"></div><div id="quizStatus" class="muted small" style="margin-top:8px"></div><button id="nextQuiz" class="primary" style="margin-top:10px">Naslednje vprašanje</button></div></div>
+ <div class="card"><h3>Kviz</h3><div id="quizEmpty" class="muted">Za kviz dodaj vsaj eno snov z nekaj besedila.</div><div id="quizBox" class="hidden"><div id="quizQuestion" style="font-weight:700;margin-bottom:10px"></div><div class="speech-row"><button id="speakQuizQuestion">🔊 Preberi vprašanje</button><button id="speakQuizAnswer" class="hidden">🔊 Preberi odgovor</button></div><div id="quizChoices"></div><div id="quizStatus" class="muted small" style="margin-top:8px"></div><button id="nextQuiz" class="primary" style="margin-top:10px">Naslednje vprašanje</button></div></div>
 </section>
 
 
@@ -1329,7 +1347,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.12",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.14",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],fileTrash:{},appTrash:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1556,8 +1574,169 @@ function renderTeachers(){$("teacherList").innerHTML=db.teachers.length?db.teach
  </div>
  <div class="actions"><button onclick="editTeacher('${t.id}')">Uredi</button><button class="danger" onclick="removeTeacher('${t.id}')">Premakni v koš</button></div></div></div>`).join(""):'<div class="empty">Dodaj kontakte učiteljev.</div>'}
 function allCards(){return db.materials.flatMap(cardsFrom)}
-function renderFlash(){let cs=allCards();$("flashEmpty").classList.toggle("hidden",!!cs.length);$("flashBox").classList.toggle("hidden",!cs.length);if(!cs.length)return;flashIndex%=cs.length;let c=cs[flashIndex];$("flashCard").textContent=flashAnswer?c.a:c.q;$("flipCard").textContent=flashAnswer?"Pokaži vprašanje":"Pokaži odgovor"}
-function renderQuiz(){const items=quizItems();$("quizEmpty").classList.toggle("hidden",!!items.length);$("quizBox").classList.toggle("hidden",!items.length);if(!items.length)return;quizIndex%=items.length;const q=items[quizIndex];$("quizQuestion").textContent=q.q;$("quizChoices").innerHTML=q.choices.map(c=>`<button class="quiz-choice" data-answer="${esc(c)}">${esc(c)}</button>`).join("");$("quizStatus").textContent=quizAnswered?"Izberi Naslednje vprašanje.":"Izberi odgovor.";document.querySelectorAll(".quiz-choice").forEach(b=>b.onclick=()=>{if(quizAnswered)return;quizAnswered=true;const ok=b.dataset.answer===q.answer;b.classList.add(ok?"correct":"wrong");document.querySelectorAll(".quiz-choice").forEach(x=>{if(x.dataset.answer===q.answer)x.classList.add("correct")});$("quizStatus").textContent=ok?"Pravilno.":"Ni pravilno. Pravilen odgovor je: "+q.answer})}
+
+let activeSpeechButton=null;
+function stopSpeaking(){
+ try{speechSynthesis.cancel()}catch{}
+ if(activeSpeechButton){activeSpeechButton.classList.remove("speech-speaking");activeSpeechButton=null}
+}
+function bestSlovenianVoice(){
+ try{
+  const voices=speechSynthesis.getVoices();
+  return voices.find(v=>/^sl[-_]/i.test(v.lang))||
+         voices.find(v=>String(v.lang).toLowerCase().startsWith("sl"))||
+         voices.find(v=>/^hr[-_]/i.test(v.lang))||
+         null
+ }catch{return null}
+}
+
+function normalizeAnswerText(s=""){
+ return String(s).toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^\p{L}\p{N}\s]/gu," ")
+  .replace(/\s+/g," ").trim()
+}
+function answerSimilarity(a,b){
+ a=normalizeAnswerText(a);b=normalizeAnswerText(b);
+ if(!a||!b)return 0;
+ if(a===b)return 1;
+ const A=new Set(a.split(" ").filter(x=>x.length>2));
+ const B=new Set(b.split(" ").filter(x=>x.length>2));
+ const inter=[...A].filter(x=>B.has(x)).length;
+ const union=new Set([...A,...B]).size||1;
+ const j=inter/union;
+ const contains=a.includes(b)||b.includes(a)?0.9:0;
+ return Math.max(j,contains)
+}
+function evaluateSpokenAnswer(userAnswer,correctAnswer){
+ const score=answerSimilarity(userAnswer,correctAnswer);
+ if(score>=.72)return {level:"correct",label:"✅ Pravilno",score};
+ if(score>=.42)return {level:"almost",label:"🟡 Skoraj pravilno",score};
+ return {level:"wrong",label:"❌ Ni pravilno",score}
+}
+function SpeechRecognitionCtor(){
+ return window.SpeechRecognition||window.webkitSpeechRecognition||null
+}
+function startVoiceAnswer(onText,button){
+ const SR=SpeechRecognitionCtor();
+ if(!SR){
+  alert("Ta brskalnik ne omogoča neposrednega prepoznavanja govora. Uporabi »Napiši odgovor« ali iPhone tipkovnico z mikrofonom.");
+  return
+ }
+ stopSpeaking();
+ const rec=new SR();
+ rec.lang="sl-SI";
+ rec.interimResults=false;
+ rec.continuous=false;
+ rec.maxAlternatives=1;
+ if(button)button.classList.add("voice-listening");
+ if(button)button.textContent="🎙️ Poslušam...";
+ rec.onresult=e=>{
+  const text=e.results?.[0]?.[0]?.transcript||"";
+  if(text)onText(text)
+ };
+ rec.onerror=e=>{
+  console.warn("SpeechRecognition:",e);
+  if(e.error!=="aborted")toast("Glasovnega odgovora ni bilo mogoče prepoznati.")
+ };
+ rec.onend=()=>{
+  if(button){button.classList.remove("voice-listening");button.textContent="🎤 Odgovori z glasom"}
+ };
+ try{rec.start()}catch(err){console.warn(err);toast("Mikrofona ni bilo mogoče zagnati.")}
+}
+function typedAnswer(promptText="Napiši odgovor"){
+ const v=prompt(promptText,"");
+ return v===null?null:v.trim()
+}
+
+function speakStudyText(text,button=null){
+ text=String(text||"").trim();
+ if(!text){toast("Ni besedila za branje.");return}
+ if(!("speechSynthesis" in window)){alert("Ta naprava ne podpira glasnega branja.");return}
+ stopSpeaking();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang="sl-SI";
+ u.rate=.92;
+ u.pitch=1;
+ const voice=bestSlovenianVoice();
+ if(voice)u.voice=voice;
+ u.onstart=()=>{activeSpeechButton=button;if(button)button.classList.add("speech-speaking")};
+ u.onend=u.onerror=()=>{if(button)button.classList.remove("speech-speaking");if(activeSpeechButton===button)activeSpeechButton=null};
+ speechSynthesis.speak(u)
+}
+try{speechSynthesis.onvoiceschanged=()=>bestSlovenianVoice()}catch{}
+
+function renderFlash(){
+ let cs=allCards();
+ $("flashEmpty").classList.toggle("hidden",!!cs.length);
+ $("flashBox").classList.toggle("hidden",!cs.length);
+ if(!cs.length)return;
+ flashIndex%=cs.length;
+ let c=cs[flashIndex];
+ $("flashCard").textContent=flashAnswer?c.a:c.q;
+ $("flipCard").textContent=flashAnswer?"Pokaži vprašanje":"Pokaži odgovor";
+ if($("speakFlash"))$("speakFlash").onclick=()=>speakStudyText(flashAnswer?c.a:c.q,$("speakFlash"));
+ if($("stopSpeech"))$("stopSpeech").onclick=stopSpeaking
+}
+function renderQuiz(){
+ const items=quizItems();
+ $("quizEmpty").classList.toggle("hidden",!!items.length);
+ $("quizBox").classList.toggle("hidden",!items.length);
+ if(!items.length)return;
+ quizIndex%=items.length;
+ const q=items[quizIndex];
+
+ $("quizQuestion").textContent=q.q;
+
+ $("quizChoices").innerHTML=
+   `<div class="voice-answer-box">
+      <b>Odgovori sama</b>
+      <div class="small muted">Lahko odgovoriš z glasom ali napišeš odgovor.</div>
+      <div class="voice-answer-actions">
+        <button id="quizVoiceAnswer">🎤 Odgovori z glasom</button>
+        <button id="quizTypeAnswer">✍️ Napiši odgovor</button>
+      </div>
+      <div id="quizHeard" class="voice-heard"></div>
+      <div id="quizVoiceResult" class="voice-result"></div>
+    </div>
+    <div class="small muted" style="margin:10px 0 6px">Ali pa izberi odgovor:</div>`+
+   q.choices.map(c=>`<button class="quiz-choice" data-answer="${esc(c)}">${esc(c)}</button>`).join("");
+
+ $("quizStatus").textContent=quizAnswered?"Izberi Naslednje vprašanje.":"Odgovori z glasom, besedilom ali izbiro.";
+ const sq=$("speakQuizQuestion"),sa=$("speakQuizAnswer");
+ if(sq)sq.onclick=()=>speakStudyText(q.q,sq);
+ if(sa){
+   sa.classList.toggle("hidden",!quizAnswered);
+   sa.onclick=()=>speakStudyText(q.answer,sa)
+ }
+
+ function finishFreeAnswer(text){
+   if(quizAnswered)return;
+   quizAnswered=true;
+   const ev=evaluateSpokenAnswer(text,q.answer);
+   $("quizHeard").textContent="Slišal/a sem: "+text;
+   $("quizVoiceResult").textContent=ev.label;
+   $("quizStatus").textContent=ev.level==="correct"?"Pravilno.":ev.level==="almost"?"Skoraj pravilno. Primerjaj s pravilnim odgovorom.":"Pravilen odgovor je: "+q.answer;
+   if(sa)sa.classList.remove("hidden");
+   document.querySelectorAll(".quiz-choice").forEach(x=>{if(x.dataset.answer===q.answer)x.classList.add("correct")})
+ }
+
+ $("quizVoiceAnswer").onclick=()=>startVoiceAnswer(finishFreeAnswer,$("quizVoiceAnswer"));
+ $("quizTypeAnswer").onclick=()=>{
+   const text=typedAnswer("Napiši svoj odgovor:");
+   if(text)finishFreeAnswer(text)
+ };
+
+ document.querySelectorAll(".quiz-choice").forEach(b=>b.onclick=()=>{
+   if(quizAnswered)return;
+   quizAnswered=true;
+   const ok=b.dataset.answer===q.answer;
+   b.classList.add(ok?"correct":"wrong");
+   document.querySelectorAll(".quiz-choice").forEach(x=>{if(x.dataset.answer===q.answer)x.classList.add("correct")});
+   $("quizStatus").textContent=ok?"Pravilno.":"Ni pravilno. Pravilen odgovor je: "+q.answer;
+   if(sa)sa.classList.remove("hidden")
+ })
+}
 
 $("toggleNewSubject").onclick=()=>{
   const w=$("newSubjectWrap");
@@ -1853,7 +2032,7 @@ window.removeGrade=async id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;
 window.editGrade=id=>{const g=db.grades.find(x=>x.id===id);if(!g)return;go("grades");$("gradeId").value=g.id;setSelectOptions("gradeSubject",opts(),g.subject);$("gradeValue").value=String(g.value);$("gradeDate").value=g.date||"";$("gradeType").value=g.type||"Pisno";$("gradeNote").value=g.note||"";$("gradeSaveBtn").textContent="Shrani spremembe";setEditMode("gradeSaveBtn",true);$("gradeForm").scrollIntoView({behavior:"smooth",block:"start"})};
 
 $("teacherForm").onsubmit=e=>{e.preventDefault();const id=$("teacherId").value,name=$("teacherName").value.trim();if(!name){toast("Vpiši ime učitelja.");return}const obj={id:id||uid(),name,subject:$("teacherSubject").value,email:$("teacherEmail").value.trim(),phone:$("teacherPhone").value.trim(),note:$("teacherNote").value.trim()};const idx=id?db.teachers.findIndex(x=>x.id===id):-1;if(id&&idx<0){toast("Učitelja za urejanje ni več mogoče najti.");resetTeacherForm();return}if(id)db.teachers[idx]=obj;else db.teachers.push(obj);e.target.reset();$("teacherId").value="";$("teacherSaveBtn").textContent="Shrani učitelja";setEditMode("teacherSaveBtn",false);save();toast(id?"Učitelj je posodobljen.":"Učitelj je dodan.")};
-$("search").oninput=renderMaterials;$("flipCard").onclick=()=>{flashAnswer=!flashAnswer;renderFlash()};$("nextCard").onclick=()=>{flashAnswer=false;flashIndex++;renderFlash()};$("nextQuiz").onclick=()=>{quizAnswered=false;quizIndex++;renderQuiz()};
+$("search").oninput=renderMaterials;$("flipCard").onclick=()=>{stopSpeaking();flashAnswer=!flashAnswer;renderFlash()};$("nextCard").onclick=()=>{flashAnswer=false;flashIndex++;renderFlash()};$("nextQuiz").onclick=()=>{quizAnswered=false;quizIndex++;renderQuiz()};
 window.setMastery=(id,v)=>{let m=db.materials.find(x=>x.id===id);if(m){m.mastery=v;m.status=v===3?"done":"learning";m.done=v===3;m.nextReview=v===3?null:addDaysKey(localDateKey(),reviewInterval(v));save()}};
 window.toggleDone=id=>{let m=db.materials.find(x=>x.id===id);if(m){m.done=!m.done;if(m.done&&m.mastery<2)m.mastery=2;m.status=m.done?"done":"learning";m.nextReview=m.done?null:addDaysKey(localDateKey(),reviewInterval(m.mastery||1));save()}};
 window.removeMaterial=async id=>{
@@ -2256,7 +2435,76 @@ function workloadStatus(){const future=db.exams.filter(e=>daysUntil(e.date)>=0);
 function globalSearchHits(q){q=q.trim().toLowerCase();if(!q)return[];const o=[];db.subjects.forEach(s=>{if((s.name+" "+(s.desc||"")).toLowerCase().includes(q))o.push({type:"Predmet",title:s.name,go:"subjects"})});db.materials.forEach(m=>{if((subjectName(m.subject)+" "+m.title+" "+m.chapter+" "+m.subchapter+" "+m.text).toLowerCase().includes(q))o.push({type:"Gradivo",title:subjectName(m.subject)+" · "+m.title,go:"study"})});db.teachers.forEach(t=>{if((t.name+" "+t.email+" "+t.note+" "+subjectName(t.subject)).toLowerCase().includes(q))o.push({type:"Učitelj",title:t.name,go:"teachers"})});db.quickNotes.forEach(n=>{if(n.text.toLowerCase().includes(q))o.push({type:"Zapisek",title:n.text,go:"home"})});db.questions.forEach(n=>{if(n.text.toLowerCase().includes(q))o.push({type:"Vprašanje",title:subjectName(n.subject)+" · "+n.text,go:"study"})});return o.slice(0,30)}
 let mockState=null;
 function startMockExam(){const subject=$("mockSubject").value,count=Number($("mockCount").value)||10;if(!subject){alert("Izberi predmet.");return}const pool=quizItems().filter(x=>x.subject===subject).sort(()=>Math.random()-.5).slice(0,count);if(!pool.length){alert("Za ta predmet dodaj več besedilnega gradiva.");return}mockState={subject,items:pool,index:0,score:0,answered:false};renderMock()}
-function renderMock(){const box=$("mockExam");if(!mockState){box.innerHTML="";return}if(mockState.index>=mockState.items.length){const pct=Math.round(mockState.score/mockState.items.length*100);db.mockHistory.push({id:uid(),date:localDateKey(),subject:mockState.subject,score:mockState.score,total:mockState.items.length});localStorage.setItem(KEY,JSON.stringify(db));box.innerHTML=`<div class="mock-question"><div class="mock-score">${pct}%</div><b>${mockState.score}/${mockState.items.length} pravilno</b><div class="small muted">Rezultat je shranjen.</div><button onclick="mockState=null;renderMock()" style="margin-top:8px">Zapri</button></div>`;return}const q=mockState.items[mockState.index];box.innerHTML=`<div class="mock-question"><b>Vprašanje ${mockState.index+1}/${mockState.items.length}</b><div style="white-space:pre-wrap;margin:8px 0">${esc(q.q)}</div>${q.choices.map(c=>`<button class="quiz-choice mock-choice" data-v="${esc(c)}">${esc(c)}</button>`).join("")}<div id="mockMsg" class="small muted"></div><button id="mockNext" class="primary hidden" style="margin-top:8px">Naslednje</button></div>`;document.querySelectorAll(".mock-choice").forEach(b=>b.onclick=()=>{if(mockState.answered)return;mockState.answered=true;const ok=b.dataset.v===q.answer;if(ok)mockState.score++;b.classList.add(ok?"correct":"wrong");document.querySelectorAll(".mock-choice").forEach(x=>{if(x.dataset.v===q.answer)x.classList.add("correct")});$("mockMsg").textContent=ok?"Pravilno.":"Pravilen odgovor: "+q.answer;$("mockNext").classList.remove("hidden")});$("mockNext").onclick=()=>{mockState.index++;mockState.answered=false;renderMock()}}
+function renderMock(){
+ const box=$("mockExam");
+ if(!mockState){box.innerHTML="";return}
+ if(mockState.index>=mockState.items.length){
+  const pct=Math.round(mockState.score/mockState.items.length*100);
+  db.mockHistory.push({id:uid(),date:localDateKey(),subject:mockState.subject,score:mockState.score,total:mockState.items.length});
+  localStorage.setItem(KEY,JSON.stringify(db));
+  box.innerHTML=`<div class="mock-question"><div class="mock-score">${pct}%</div><b>${mockState.score}/${mockState.items.length} pravilno</b><div class="small muted">Rezultat je shranjen.</div><button onclick="mockState=null;renderMock()" style="margin-top:8px">Zapri</button></div>`;
+  return
+ }
+
+ const q=mockState.items[mockState.index];
+ box.innerHTML=`<div class="mock-question">
+   <b>Vprašanje ${mockState.index+1}/${mockState.items.length}</b>
+   <div style="white-space:pre-wrap;margin:8px 0">${esc(q.q)}</div>
+   <div class="speech-row">
+     <button id="mockSpeakQuestion">🔊 Preberi vprašanje</button>
+     <button id="mockSpeakAnswer" class="hidden">🔊 Preberi odgovor</button>
+   </div>
+   <div class="voice-answer-box">
+     <b>Odgovori sama</b>
+     <div class="voice-answer-actions">
+       <button id="mockVoiceAnswer">🎤 Odgovori z glasom</button>
+       <button id="mockTypeAnswer">✍️ Napiši odgovor</button>
+     </div>
+     <div id="mockHeard" class="voice-heard"></div>
+     <div id="mockVoiceResult" class="voice-result"></div>
+   </div>
+   <div class="small muted" style="margin:10px 0 6px">Ali pa izberi odgovor:</div>
+   ${q.choices.map(c=>`<button class="quiz-choice mock-choice" data-v="${esc(c)}">${esc(c)}</button>`).join("")}
+   <div id="mockMsg" class="small muted"></div>
+   <button id="mockNext" class="primary hidden" style="margin-top:8px">Naslednje</button>
+ </div>`;
+
+ $("mockSpeakQuestion").onclick=()=>speakStudyText(q.q,$("mockSpeakQuestion"));
+ $("mockSpeakAnswer").onclick=()=>speakStudyText(q.answer,$("mockSpeakAnswer"));
+
+ function finishMockFree(text){
+  if(mockState.answered)return;
+  mockState.answered=true;
+  const ev=evaluateSpokenAnswer(text,q.answer);
+  if(ev.level==="correct")mockState.score++;
+  $("mockHeard").textContent="Slišal/a sem: "+text;
+  $("mockVoiceResult").textContent=ev.label;
+  $("mockMsg").textContent=ev.level==="correct"?"Pravilno.":ev.level==="almost"?"Skoraj pravilno. Pravilen odgovor: "+q.answer:"Pravilen odgovor: "+q.answer;
+  $("mockSpeakAnswer").classList.remove("hidden");
+  $("mockNext").classList.remove("hidden");
+  document.querySelectorAll(".mock-choice").forEach(x=>{if(x.dataset.v===q.answer)x.classList.add("correct")})
+ }
+
+ $("mockVoiceAnswer").onclick=()=>startVoiceAnswer(finishMockFree,$("mockVoiceAnswer"));
+ $("mockTypeAnswer").onclick=()=>{
+  const text=typedAnswer("Napiši svoj odgovor:");
+  if(text)finishMockFree(text)
+ };
+
+ document.querySelectorAll(".mock-choice").forEach(b=>b.onclick=()=>{
+  if(mockState.answered)return;
+  mockState.answered=true;
+  const ok=b.dataset.v===q.answer;
+  if(ok)mockState.score++;
+  b.classList.add(ok?"correct":"wrong");
+  document.querySelectorAll(".mock-choice").forEach(x=>{if(x.dataset.v===q.answer)x.classList.add("correct")});
+  $("mockMsg").textContent=ok?"Pravilno.":"Pravilen odgovor: "+q.answer;
+  $("mockSpeakAnswer").classList.remove("hidden");
+  $("mockNext").classList.remove("hidden")
+ });
+
+ $("mockNext").onclick=()=>{stopSpeaking();mockState.index++;mockState.answered=false;renderMock()}
+}
 function renderV8Extras(){
  const chapterPrev=$("chapterChecklistSubject")?.value||"";setSelectOptions("chapterChecklistSubject",opts("Izberi predmet"),chapterPrev);if(!$("chapterChecklistSubject").value&&db.subjects[0])$("chapterChecklistSubject").value=db.subjects[0].id;const mockPrev=$("mockSubject")?.value||"";setSelectOptions("mockSubject",opts("Izberi predmet"),mockPrev);
  $("inboxList").innerHTML=inboxHtml();$("chapterChecklist").innerHTML=chapterChecklistHtml($("chapterChecklistSubject").value);$("studyStats").innerHTML=studyStatsHtml();$("weeklyPlannerStats").innerHTML=studyStatsHtml();$("studyStreak").textContent="🔥 "+studyStreak();
@@ -2404,7 +2652,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.12: iPhone PDF direct-open fix =====
+// ===== V14.14: glasovni odgovor + tekstovni fallback =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
