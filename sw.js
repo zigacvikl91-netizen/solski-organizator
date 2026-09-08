@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v14-9-global-trash";
+const CACHE="moj-organizator-v14-11-exclusive-trash";
 const CORE=[
   "./",
   "./index.html",

@@ -1030,6 +1030,36 @@ body.tutorial-open::after{pointer-events:none!important}
   .asset-row .danger.asset-btn{width:42px;min-width:42px;max-width:42px;height:42px}
 }
 
+
+/* V14.11: Koš je ločen pogled znotraj Učenja */
+#study.trash-mode > :not(h1):not(.help-chip):not(#fileCenterCard){
+  display:none !important;
+}
+#study.trash-mode #fileCenterCard{
+  margin-top:10px;
+}
+#study.trash-mode #fileCenterCard .file-center-toolbar{
+  grid-template-columns:1fr 1fr;
+}
+#study.trash-mode #fileSearch{
+  grid-column:1 / -1;
+}
+#trashModeTitle{
+  display:none;
+  margin:0 0 8px;
+}
+#study.trash-mode #trashModeTitle{
+  display:block;
+}
+@media(max-width:620px){
+  #study.trash-mode #fileCenterCard .file-center-toolbar{
+    grid-template-columns:1fr;
+  }
+  #study.trash-mode #fileSearch{
+    grid-column:auto;
+  }
+}
+
 </style>
 <script>
 /* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
@@ -1186,7 +1216,7 @@ setTimeout(function(){
  </form></div>
  <div class="card"><h3>✅ Checklist poglavij</h3><label>Predmet<select id="chapterChecklistSubject"></select></label><div id="chapterChecklist"></div></div>
  <div class="card"><h3>Iskanje</h3><input id="search" placeholder="Poišči po snovi, naslovu, poglavju ali predmetu"></div>
-<div class="card" id="fileCenterCard"><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button id="openTrashBtn" type="button" class="secondary" style="min-height:36px;padding:7px 10px">🗑️ Koš</button><span id="fileCountBadge" class="badge">0</span></div></div>
+<div class="card" id="fileCenterCard"><h2 id="trashModeTitle">🗑️ Koš</h2><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button id="openTrashBtn" type="button" class="secondary" style="min-height:36px;padding:7px 10px">🗑️ Koš</button><span id="fileCountBadge" class="badge">0</span></div></div>
  <div class="file-center-toolbar"><input id="fileSearch" placeholder="Išči po imenu, oznaki ali zapisku"><select id="fileTypeFilter"><option value="">Vse vrste</option><option value="pdf">PDF</option><option value="word">Word</option><option value="powerpoint">PowerPoint</option><option value="excel">Excel</option><option value="image">Slike</option></select><select id="fileViewFilter"><option value="active">Aktivne</option><option value="favorites">Priljubljene</option><option value="recent">Nedavno odprte</option><option value="trash">Koš</option></select></div>
  <div id="fileCenterList"></div>
  <div id="globalTrashWrap" style="margin-top:14px">
@@ -1329,7 +1359,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.9",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.11",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],fileTrash:{},appTrash:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1350,6 +1380,20 @@ function normalizeDb(){
  db.studySettings.blockMinutes=Math.max(15,Number(db.studySettings.blockMinutes)||45);
  db.dayOverrides=(db.dayOverrides&&typeof db.dayOverrides==="object")?db.dayOverrides:{};
  db.notificationSettings=(db.notificationSettings&&typeof db.notificationSettings==="object")?db.notificationSettings:{enabled:false};db.fileTrash=(db.fileTrash&&typeof db.fileTrash==="object"&&!Array.isArray(db.fileTrash))?db.fileTrash:{};db.appTrash=Array.isArray(db.appTrash)?db.appTrash:[];
+{
+ const seen=new Map(),clean=[];
+ for(const t of db.appTrash){
+  const key=(t.type||"")+"|"+(t.entityKey||trashEntityKey?.(t.type,t.data)||t.trashId);
+  const prev=seen.get(key);
+  if(!prev){seen.set(key,t);clean.push(t)}
+  else if((t.deletedAt||0)>(prev.deletedAt||0)){
+    const i=clean.indexOf(prev);
+    if(i>=0)clean[i]=t;
+    seen.set(key,t)
+  }
+ }
+ db.appTrash=clean
+};
  const seen=new Set();
  db.subjects=db.subjects.filter(s=>s&&typeof s==="object").map(s=>{if(!s.id||seen.has(String(s.id)))s.id=mk();s.id=String(s.id);seen.add(s.id);s.name=String(s.name||"Neimenovan predmet");s.desc=String(s.desc||"");s.target=String(s.target||"");s.completed=!!s.completed;return s});
  const valid=new Set(db.subjects.map(s=>s.id));
@@ -1731,11 +1775,23 @@ function trashLabel(type,data={}){
  if(type==="quickNote")return data.text||"Zapisek";
  return "Element"
 }
+function trashEntityKey(type,data={}){
+ if(type==="subject")return data.subject?.id||data.id||"";
+ return data.id||"";
+}
 function pushAppTrash(type,data,extra={}){
  db.appTrash??=[];
+ const entityKey=trashEntityKey(type,data);
+
+ // Ista stvar sme biti v košu samo enkrat.
+ if(entityKey){
+  db.appTrash=db.appTrash.filter(t=>!(t.type===type&&trashEntityKey(t.type,t.data)===entityKey))
+ }
+
  db.appTrash.push({
   trashId:uid(),
   type,
+  entityKey,
   data:JSON.parse(JSON.stringify(data)),
   extra:JSON.parse(JSON.stringify(extra||{})),
   deletedAt:Date.now()
@@ -1743,7 +1799,13 @@ function pushAppTrash(type,data,extra={}){
 }
 async function renderGlobalTrash(){
  const box=$("globalTrashList");if(!box)return;
- const items=[...(db.appTrash||[])].sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+ const dedupe=new Map();
+ for(const t of (db.appTrash||[])){
+  const key=(t.type||"")+"|"+(t.entityKey||trashEntityKey(t.type,t.data)||t.trashId);
+  const prev=dedupe.get(key);
+  if(!prev||(t.deletedAt||0)>(prev.deletedAt||0))dedupe.set(key,t)
+ }
+ const items=[...dedupe.values()].sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
  if(!items.length){box.innerHTML='<div class="empty">Ni drugih izbrisanih stvari.</div>';return}
  box.innerHTML=items.map(t=>{
    const typeNames={subject:"Predmet",material:"Gradivo",exam:"Izpit",grade:"Ocena",teacher:"Učitelj",question:"Vprašanje",quickNote:"Zapisek"};
@@ -1754,9 +1816,15 @@ async function renderGlobalTrash(){
 window.restoreTrashItem=async trashId=>{
  const t=(db.appTrash||[]).find(x=>x.trashId===trashId);if(!t)return;
  const d=t.data,e=t.extra||{};
+ const entityKey=t.entityKey||trashEntityKey(t.type,d);
+
  if(t.type==="material"){
    if(!db.materials.some(x=>x.id===d.id))db.materials.push(d);
-   for(const aid of [...(d.photos||[]),...(d.attachments||[])]){delete db.fileTrash?.[aid];const r=await photoGet(aid);if(r){r.deletedAt=0;await photoPut(r);FILE_RUNTIME_CACHE.set(aid,r)}}
+   for(const aid of [...(d.photos||[]),...(d.attachments||[])]){
+     delete db.fileTrash?.[aid];
+     const r=await photoGet(aid);
+     if(r){r.deletedAt=0;await photoPut(r);FILE_RUNTIME_CACHE.set(aid,r)}
+   }
  }else if(t.type==="subject"){
    if(!db.subjects.some(x=>x.id===d.subject.id))db.subjects.push(d.subject);
    for(const m of (d.materials||[]))if(!db.materials.some(x=>x.id===m.id))db.materials.push(m);
@@ -1765,15 +1833,39 @@ window.restoreTrashItem=async trashId=>{
    for(const x of (d.questions||[]))if(!db.questions.some(y=>y.id===x.id))db.questions.push(x);
    for(const x of (d.studySessions||[]))if(!db.studySessions.some(y=>y.id===x.id))db.studySessions.push(x);
    for(const x of (d.mockHistory||[]))if(!db.mockHistory.some(y=>y.id===x.id))db.mockHistory.push(x);
-   for(const aid of (d.assetIds||[])){delete db.fileTrash?.[aid];const r=await photoGet(aid);if(r){r.deletedAt=0;await photoPut(r);FILE_RUNTIME_CACHE.set(aid,r)}}
-   (d.teacherIds||[]).forEach(id=>{const teacher=db.teachers.find(x=>x.id===id);if(teacher)teacher.subject=d.subject.id});
- }else if(t.type==="exam"){if(!db.exams.some(x=>x.id===d.id))db.exams.push(d)}
- else if(t.type==="grade"){if(!db.grades.some(x=>x.id===d.id))db.grades.push(d)}
- else if(t.type==="teacher"){if(!db.teachers.some(x=>x.id===d.id))db.teachers.push(d)}
- else if(t.type==="question"){if(!db.questions.some(x=>x.id===d.id))db.questions.push(d)}
- else if(t.type==="quickNote"){if(!db.quickNotes.some(x=>x.id===d.id))db.quickNotes.push(d)}
- db.appTrash=db.appTrash.filter(x=>x.trashId!==trashId);
- save();await renderGlobalTrash();await renderFileCenter().catch(()=>{});toast("Obnovljeno iz koša.")
+   for(const aid of (d.assetIds||[])){
+     delete db.fileTrash?.[aid];
+     const r=await photoGet(aid);
+     if(r){r.deletedAt=0;await photoPut(r);FILE_RUNTIME_CACHE.set(aid,r)}
+   }
+   (d.teacherIds||[]).forEach(id=>{
+     const teacher=db.teachers.find(x=>x.id===id);
+     if(teacher)teacher.subject=d.subject.id
+   });
+ }else if(t.type==="exam"){
+   if(!db.exams.some(x=>x.id===d.id))db.exams.push(d)
+ }else if(t.type==="grade"){
+   if(!db.grades.some(x=>x.id===d.id))db.grades.push(d)
+ }else if(t.type==="teacher"){
+   if(!db.teachers.some(x=>x.id===d.id))db.teachers.push(d)
+ }else if(t.type==="question"){
+   if(!db.questions.some(x=>x.id===d.id))db.questions.push(d)
+ }else if(t.type==="quickNote"){
+   if(!db.quickNotes.some(x=>x.id===d.id))db.quickNotes.push(d)
+ }
+
+ // Ob obnovi odstrani VSE stare duplikate iste stvari iz koša.
+ db.appTrash=(db.appTrash||[]).filter(x=>{
+   if(x.trashId===trashId)return false;
+   const xKey=x.entityKey||trashEntityKey(x.type,x.data);
+   return !(entityKey&&x.type===t.type&&xKey===entityKey)
+ });
+
+ save();
+ render();
+ await renderGlobalTrash();
+ await renderFileCenter().catch(()=>{});
+ toast("Obnovljeno. Element je odstranjen iz koša.")
 };
 window.deleteTrashItemForever=async trashId=>{
  const t=(db.appTrash||[]).find(x=>x.trashId===trashId);if(!t)return;
@@ -2061,9 +2153,22 @@ window.linkFile=async id=>{
  await patchAsset(id,{examId,teacherId});toast("Povezave datoteke so shranjene.")
 };
 function fileStatusLabel(s){return s==="done"?"Končano":s==="learning"?"Učim se":"Nisem začela"}
+
+function setStudyTrashMode(enabled){
+ const study=$("study");
+ if(study)study.classList.toggle("trash-mode",!!enabled);
+
+ const filter=$("fileViewFilter");
+ if(enabled && filter && filter.value!=="trash")filter.value="trash";
+
+ const btn=$("openTrashBtn");
+ if(btn)btn.textContent=enabled?"← Nazaj na učenje":"🗑️ Koš";
+}
+
 async function renderFileCenter(){
  const box=$("fileCenterList");if(!box)return;
  const q=($("fileSearch")?.value||"").trim().toLowerCase(),type=$("fileTypeFilter")?.value||"",view=$("fileViewFilter")?.value||"active";
+ setStudyTrashMode(view==="trash");
  let rows=(await allLocalAssets()).filter(r=>r?.blob);rows.forEach(r=>FILE_RUNTIME_CACHE.set(r.id,r));
  const gt=$("globalTrashWrap");if(gt)gt.style.display=view==="trash"?"block":"none";
  if(view==="trash")await renderGlobalTrash();
@@ -2100,7 +2205,8 @@ async function renderFileCenter(){
 function setupFileCenter(){
  ["fileSearch","fileTypeFilter","fileViewFilter"].forEach(id=>$(id)?.addEventListener(id==="fileSearch"?"input":"change",()=>renderFileCenter().catch(()=>{})));
  $("openTrashBtn")?.addEventListener("click",()=>{
-  const f=$("fileViewFilter");if(f)f.value="trash";
+  const f=$("fileViewFilter");if(!f)return;
+  f.value=f.value==="trash"?"active":"trash";
   renderFileCenter().then(()=>$("fileCenterCard")?.scrollIntoView({behavior:"smooth",block:"start"})).catch(()=>{})
  })
 }
@@ -2293,7 +2399,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.9: globalni Koš - trajni izbris dovoljen samo v Košu =====
+// ===== V14.11: ekskluzivni Koš - nič aktivnega ni vidno med ogledom Koša =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
