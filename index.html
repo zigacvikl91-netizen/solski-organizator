@@ -1329,7 +1329,7 @@ setTimeout(function(){
 <button data-tab="teachers"><span>♙</span>Učitelji</button>
 </div></nav>
 <script>
-const APP_CONFIG={version:"V14.11",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
+const APP_CONFIG={version:"V14.12",syncServer:"https://solski-organizator-sync.ziga-cvikl91.workers.dev"};
 const KEY="solskiOrganizatorV3";
 const EMPTY_DB={subjects:[],materials:[],exams:[],teachers:[],grades:[],studySettings:{},dayOverrides:{},studySlots:[],questions:[],studySessions:[],freeDays:[],quickNotes:[],mockHistory:[],fileTrash:{},appTrash:[],notificationSettings:{enabled:false}};
 function cloneEmptyDb(){return JSON.parse(JSON.stringify(EMPTY_DB))}
@@ -1977,9 +1977,52 @@ async function renderPendingFiles(){
 }
 function openStoredFile(id){
  const r=FILE_RUNTIME_CACHE.get(id);
+
+ if(!r?.blob||r.deletedAt){
+  photoGet(id).then(r2=>{
+   if(!r2||r2.deletedAt){alert("Datoteke na tej napravi ni mogoče najti.");return}
+   FILE_RUNTIME_CACHE.set(id,r2);
+   toast("Datoteka je pripravljena. Pritisni »Odpri« še enkrat.")
+  }).catch(()=>alert("Datoteke ni bilo mogoče pripraviti za odpiranje."));
+  return
+ }
+
+ const ext=fileExt(r.name||"");
+ const mime=normalizedMime(r.name,r.type||r.blob.type);
+
+ // PDF in slike iPhone/Safari zna prikazati neposredno.
+ // Blob ponovno ovijemo s pravilnim MIME tipom, da PDF ni obravnavan kot Office dokument.
+ if(ext==="pdf"||mime==="application/pdf"||String(mime).startsWith("image/")){
+  try{
+   const fixedBlob=new Blob([r.blob],{type:mime});
+   const u=URL.createObjectURL(fixedBlob);
+   const w=window.open(u,"_blank");
+   if(!w){
+    const a=document.createElement("a");
+    a.href=u;a.target="_blank";a.rel="noopener";
+    document.body.appendChild(a);a.click();a.remove()
+   }
+   r.lastOpened=Date.now();
+   photoPut(r).catch(()=>{});
+   FILE_RUNTIME_CACHE.set(id,r);
+   setTimeout(()=>URL.revokeObjectURL(u),5*60*1000);
+   renderFileCenter().catch(()=>{});
+   return
+  }catch(err){
+   console.warn("Lokalni PDF prikaz ni uspel:",err)
+  }
+ }
+
+ // Word / PowerPoint / Excel: uporabi HTTPS Worker povezavo,
+ // ker iOS blob: URL-jev za Office datoteke ne obravnava zanesljivo.
+ if(!navigator.onLine){
+  alert("Za odpiranje Word/PowerPoint/Excel dokumenta potrebuješ internet. Datoteka je sicer še vedno shranjena lokalno za offline uporabo.");
+  return
+ }
+
  const popup=window.open("about:blank","_blank");
 
- const doOpen=async()=>{
+ (async()=>{
   try{
    const res=await syncFetch("/files/open-token/"+encodeURIComponent(id),{method:"POST"});
    if(!res.ok){
@@ -1992,25 +2035,16 @@ function openStoredFile(id){
    if(popup)popup.location.replace(data.url);
    else window.location.href=data.url;
 
-   if(r){
-    r.lastOpened=Date.now();
-    photoPut(r).catch(()=>{});
-    FILE_RUNTIME_CACHE.set(id,r);
-    renderFileCenter().catch(()=>{})
-   }
+   r.lastOpened=Date.now();
+   photoPut(r).catch(()=>{});
+   FILE_RUNTIME_CACHE.set(id,r);
+   renderFileCenter().catch(()=>{})
   }catch(err){
    try{if(popup)popup.close()}catch{}
    console.error("Odpiranje datoteke:",err);
    alert("Datoteke ni bilo mogoče odpreti: "+(err?.message||err))
   }
- };
-
- if(!navigator.onLine){
-  try{if(popup)popup.close()}catch{}
-  alert("Za neposredno odpiranje dokumenta potrebuješ internet. Lokalna kopija ostane shranjena za offline uporabo.");
-  return
- }
- doOpen()
+ })()
 }
 
 function shareStoredFile(id){
@@ -2370,7 +2404,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.11: pravilno odpiranje po tipu datoteke =====
+// ===== V14.12: iPhone PDF direct-open fix =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}

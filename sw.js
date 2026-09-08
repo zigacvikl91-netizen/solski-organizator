@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v14-11-filetype-fix";
+const CACHE="moj-organizator-v14-12-pdf-open-fix";
 const CORE=[
   "./",
   "./index.html",
