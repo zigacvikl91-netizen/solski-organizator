@@ -1030,36 +1030,6 @@ body.tutorial-open::after{pointer-events:none!important}
   .asset-row .danger.asset-btn{width:42px;min-width:42px;max-width:42px;height:42px}
 }
 
-
-/* V14.11: Koš je ločen pogled znotraj Učenja */
-#study.trash-mode > :not(h1):not(.help-chip):not(#fileCenterCard){
-  display:none !important;
-}
-#study.trash-mode #fileCenterCard{
-  margin-top:10px;
-}
-#study.trash-mode #fileCenterCard .file-center-toolbar{
-  grid-template-columns:1fr 1fr;
-}
-#study.trash-mode #fileSearch{
-  grid-column:1 / -1;
-}
-#trashModeTitle{
-  display:none;
-  margin:0 0 8px;
-}
-#study.trash-mode #trashModeTitle{
-  display:block;
-}
-@media(max-width:620px){
-  #study.trash-mode #fileCenterCard .file-center-toolbar{
-    grid-template-columns:1fr;
-  }
-  #study.trash-mode #fileSearch{
-    grid-column:auto;
-  }
-}
-
 </style>
 <script>
 /* V12.5 startup failsafe: prepreči prazen zaslon, tudi če spodnji JS odpove. */
@@ -1216,7 +1186,7 @@ setTimeout(function(){
  </form></div>
  <div class="card"><h3>✅ Checklist poglavij</h3><label>Predmet<select id="chapterChecklistSubject"></select></label><div id="chapterChecklist"></div></div>
  <div class="card"><h3>Iskanje</h3><input id="search" placeholder="Poišči po snovi, naslovu, poglavju ali predmetu"></div>
-<div class="card" id="fileCenterCard"><h2 id="trashModeTitle">🗑️ Koš</h2><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button id="openTrashBtn" type="button" class="secondary" style="min-height:36px;padding:7px 10px">🗑️ Koš</button><span id="fileCountBadge" class="badge">0</span></div></div>
+<div class="card" id="fileCenterCard"><div class="hero"><div><h3>🗂️ Moje datoteke</h3><div class="small muted">Vse lokalno shranjene datoteke na enem mestu. Delujejo tudi brez interneta.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button id="openTrashBtn" type="button" class="secondary" style="min-height:36px;padding:7px 10px">🗑️ Koš</button><span id="fileCountBadge" class="badge">0</span></div></div>
  <div class="file-center-toolbar"><input id="fileSearch" placeholder="Išči po imenu, oznaki ali zapisku"><select id="fileTypeFilter"><option value="">Vse vrste</option><option value="pdf">PDF</option><option value="word">Word</option><option value="powerpoint">PowerPoint</option><option value="excel">Excel</option><option value="image">Slike</option></select><select id="fileViewFilter"><option value="active">Aktivne</option><option value="favorites">Priljubljene</option><option value="recent">Nedavno odprte</option><option value="trash">Koš</option></select></div>
  <div id="fileCenterList"></div>
  <div id="globalTrashWrap" style="margin-top:14px">
@@ -1865,7 +1835,7 @@ window.restoreTrashItem=async trashId=>{
  render();
  await renderGlobalTrash();
  await renderFileCenter().catch(()=>{});
- toast("Obnovljeno. Element je odstranjen iz koša.")
+ toast("Obnovljeno iz koša.")
 };
 window.deleteTrashItemForever=async trashId=>{
  const t=(db.appTrash||[]).find(x=>x.trashId===trashId);if(!t)return;
@@ -1942,6 +1912,21 @@ async function hydrateMaterialPhotos(){for(const el of document.querySelectorAll
 const DOC_EXTS=new Set(["pdf","doc","docx","ppt","pptx","xls","xlsx"]);
 const FILE_RUNTIME_CACHE=new Map();
 function fileExt(name=""){const p=String(name).toLowerCase().split(".");return p.length>1?p.pop():""}
+function normalizedMime(name="",type=""){
+ const ext=fileExt(name);
+ const byExt={
+  pdf:"application/pdf",
+  doc:"application/msword",
+  docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ppt:"application/vnd.ms-powerpoint",
+  pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  xls:"application/vnd.ms-excel",
+  xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",heic:"image/heic",webp:"image/webp"
+ };
+ return byExt[ext]||type||"application/octet-stream"
+}
+
 function fileKind(r={}){
  const ext=fileExt(r.name||"");
  const type=String(r.type||r.blob?.type||"").toLowerCase();
@@ -1973,7 +1958,7 @@ async function addDocumentFiles(files){
   if(f.size>20*1024*1024){alert("Datoteka "+f.name+" je večja od 20 MB in ni bila dodana.");continue}
   try{
    const id=uid();
-   await photoPut({id,blob:f,name:f.name,type:f.type||"application/octet-stream",size:f.size||0,created:Date.now(),tags:[],note:"",favorite:false,status:"new",progress:0,important:false,lastOpened:0,deletedAt:0,examId:"",teacherId:""});
+   await photoPut({id,blob:f,name:f.name,type:normalizedMime(f.name,f.type),size:f.size||0,created:Date.now(),tags:[],note:"",favorite:false,status:"new",progress:0,important:false,lastOpened:0,deletedAt:0,examId:"",teacherId:""});
    pendingMaterialFiles.push(id)
   }catch(err){console.error("Shranjevanje datoteke:",err);alert("Datoteke "+f.name+" ni bilo mogoče shraniti na tej napravi.")}
  }
@@ -2153,22 +2138,9 @@ window.linkFile=async id=>{
  await patchAsset(id,{examId,teacherId});toast("Povezave datoteke so shranjene.")
 };
 function fileStatusLabel(s){return s==="done"?"Končano":s==="learning"?"Učim se":"Nisem začela"}
-
-function setStudyTrashMode(enabled){
- const study=$("study");
- if(study)study.classList.toggle("trash-mode",!!enabled);
-
- const filter=$("fileViewFilter");
- if(enabled && filter && filter.value!=="trash")filter.value="trash";
-
- const btn=$("openTrashBtn");
- if(btn)btn.textContent=enabled?"← Nazaj na učenje":"🗑️ Koš";
-}
-
 async function renderFileCenter(){
  const box=$("fileCenterList");if(!box)return;
  const q=($("fileSearch")?.value||"").trim().toLowerCase(),type=$("fileTypeFilter")?.value||"",view=$("fileViewFilter")?.value||"active";
- setStudyTrashMode(view==="trash");
  let rows=(await allLocalAssets()).filter(r=>r?.blob);rows.forEach(r=>FILE_RUNTIME_CACHE.set(r.id,r));
  const gt=$("globalTrashWrap");if(gt)gt.style.display=view==="trash"?"block":"none";
  if(view==="trash")await renderGlobalTrash();
@@ -2205,8 +2177,7 @@ async function renderFileCenter(){
 function setupFileCenter(){
  ["fileSearch","fileTypeFilter","fileViewFilter"].forEach(id=>$(id)?.addEventListener(id==="fileSearch"?"input":"change",()=>renderFileCenter().catch(()=>{})));
  $("openTrashBtn")?.addEventListener("click",()=>{
-  const f=$("fileViewFilter");if(!f)return;
-  f.value=f.value==="trash"?"active":"trash";
+  const f=$("fileViewFilter");if(f)f.value="trash";
   renderFileCenter().then(()=>$("fileCenterCard")?.scrollIntoView({behavior:"smooth",block:"start"})).catch(()=>{})
  })
 }
@@ -2399,7 +2370,7 @@ function addCancelButton(saveId,fn){const saveBtn=$(saveId);if(!saveBtn||documen
 addCancelButton("subjectSaveBtn",resetSubjectForm);addCancelButton("materialSaveBtn",resetMaterialForm);addCancelButton("examSaveBtn",resetExamForm);addCancelButton("gradeSaveBtn",resetGradeForm);addCancelButton("teacherSaveBtn",resetTeacherForm);
 
 
-// ===== V14.11: ekskluzivni Koš - nič aktivnega ni vidno med ogledom Koša =====
+// ===== V14.11: pravilno odpiranje po tipu datoteke =====
 const SYNC_KEY_STORAGE="solaDeviceSyncKeyV1",SYNC_LOCAL_UPDATED="solaDeviceSyncLocalUpdatedV1",SYNC_LAST_SERVER="solaDeviceSyncLastServerV1",SYNC_LAST_AT="solaDeviceSyncLastAtV1";let SYNC_REMOTE_APPLY=false,syncTimer=null,syncRunning=false;
 function applyAppVersion(){document.querySelectorAll("[data-app-version]").forEach(el=>el.textContent=APP_CONFIG.version)}
 function currentSyncKey(){try{return localStorage.getItem(SYNC_KEY_STORAGE)||""}catch{return ""}}
@@ -2424,7 +2395,7 @@ async function uploadOneAsset(id,r){
  const headers={
   "Content-Type":r.type||r.blob.type||"application/octet-stream",
   "X-File-Name":encodeURIComponent(r.name||"datoteka"),
-  "X-File-Type":encodeURIComponent(r.type||r.blob.type||"application/octet-stream"),
+  "X-File-Type":encodeURIComponent(normalizedMime(r.name,r.type||r.blob.type)),
   "X-File-Size":String(size)
  };
  const res=await syncFetch("/files/"+encodeURIComponent(id),{method:"POST",headers,body:r.blob});
