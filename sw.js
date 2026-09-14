@@ -1,4 +1,4 @@
-const CACHE="moj-organizator-v15-1-study-voice-subjects";
+const CACHE="moj-organizator-v15-3-ui-cleanup";
 const CORE=[
   "./","./index.html","./manifest.json","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon-180.png"
 ];
